@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101828">
+<title>Birmotor V30</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#fff;font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif}
+#appFrame{position:fixed;inset:0;width:100%;height:100%;border:0;background:#fff}
+#bellBtn{position:fixed;right:14px;top:12px;z-index:99999;border:0;border-radius:999px;background:#101828;color:#fff;padding:11px 14px;font-size:14px;font-weight:700;box-shadow:0 4px 16px #0003;touch-action:manipulation}
+#bellBtn.on{background:#067647}
+#bellNotice{display:none;position:fixed;left:14px;right:14px;top:58px;z-index:99998;background:#fff7d6;border:2px solid #f2c94c;color:#101828;border-radius:16px;padding:13px 15px;font-weight:800;text-align:center;box-shadow:0 8px 24px #0003;animation:pulse .9s ease-in-out infinite}
+#bellNotice.show{display:block}
+@keyframes pulse{50%{transform:scale(1.02)}}
+#ratingOverlay{display:none;position:fixed;inset:0;z-index:100000;background:#0008;align-items:flex-end}
+#ratingOverlay.show{display:flex}
+#ratingCard{width:min(520px,100%);margin:auto;background:#fff;border-radius:24px 24px 0 0;padding:24px 18px calc(30px + env(safe-area-inset-bottom));box-sizing:border-box}
+#ratingCard h2{margin:0 0 7px;color:#101828}
+#ratingCard p{color:#667085}
+#ratingStars{display:flex;justify-content:center;gap:7px;margin:20px 0}
+.rstar{border:0;background:#f2f4f7;border-radius:12px;width:50px;height:50px;font-size:28px;color:#101828}
+.rstar.on{background:#fff4cc}
+#ratingCommentOuter{width:100%;min-height:90px;border:1px solid #e4e7ec;border-radius:12px;padding:12px;font-size:15px;box-sizing:border-box;resize:none}
+#ratingMsg{min-height:22px;color:#667085;margin:10px 0}
+</style>
+</head>
+<body>
+<iframe id="appFrame" src="Birmotor-V29-Buton-Cozum.html" title="Birmotor"></iframe>
+<button id="bellBtn" type="button">🔔 Sesi Aç</button>
+<div id="bellNotice">🔔 YENİ YOLCULUK ÇAĞRISI</div>
+
+<div id="ratingOverlay">
+  <div id="ratingCard">
+    <h2 id="ratingTitleOuter">Sürücüyü Puanla ⭐</h2>
+    <p id="ratingSubOuter">Yolculuğun nasıldı?</p>
+    <div id="ratingStars">
+      <button class="rstar" type="button" onclick="outerRating(1)">★</button>
+      <button class="rstar" type="button" onclick="outerRating(2)">★</button>
+      <button class="rstar" type="button" onclick="outerRating(3)">★</button>
+      <button class="rstar" type="button" onclick="outerRating(4)">★</button>
+      <button class="rstar" type="button" onclick="outerRating(5)">★</button>
+    </div>
+    <textarea id="ratingCommentOuter" placeholder="İstersen yorum bırakabilirsin..."></textarea>
+    <div id="ratingMsg"></div>
+    <button id="ratingSendOuter" type="button" style="width:100%;padding:16px;border:0;border-radius:12px;background:#101828;color:#fff;font-weight:700;font-size:17px" onclick="sendOuterRating()">Puanı Gönder</button>
+    <button type="button" style="width:100%;padding:14px;border:0;border-radius:12px;background:#f2f4f7;color:#101828;font-weight:700;font-size:16px;margin-top:8px" onclick="skipOuterRating()">Daha Sonra</button>
+  </div>
+</div>
+
+<script>
+const frame=document.getElementById('appFrame'),bellBtn=document.getElementById('bellBtn'),bellNotice=document.getElementById('bellNotice');
+let audioCtx=null,timer=null,enabled=false,wasRequest=false;
+let outerRatingValue=0,outerRatingTarget='driver',driverWasInTrip=false,outerRatingShown=false;
+function unlockAudio(){try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;if(!audioCtx)audioCtx=new AC();if(audioCtx.state==='suspended')audioCtx.resume();enabled=true;bellBtn.textContent='🔔 Ses Açık';bellBtn.classList.add('on')}catch(e){}}
+function ring(){if(!enabled||!audioCtx)return;try{const now=audioCtx.currentTime;[0,0.18,0.36].forEach((off,i)=>{const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.value=[880,1175,988][i];g.gain.setValueAtTime(.0001,now+off);g.gain.exponentialRampToValueAtTime(.16,now+off+.02);g.gain.exponentialRampToValueAtTime(.0001,now+off+.17);o.connect(g);g.connect(audioCtx.destination);o.start(now+off);o.stop(now+off+.19)})}catch(e){}}
+function stopAlert(){if(timer){clearInterval(timer);timer=null}bellNotice.classList.remove('show');wasRequest=false}
+function startAlert(){if(wasRequest)return;wasRequest=true;bellNotice.classList.add('show');ring();timer=setInterval(ring,1800);try{if(navigator.vibrate)navigator.vibrate([250,120,250])}catch(e){}}
+function inspectDriver(){try{const d=frame.contentDocument;if(!d)return;const req=d.getElementById('driverRequest'),state=d.getElementById('driverState');const visible=req&&getComputedStyle(req).display!=='none';const driverAvailable=state&&/Müsait/.test(state.textContent||'')&&!/değil/.test(state.textContent||'');if(visible&&driverAvailable)startAlert();else if(!visible||(state&&!/Müsait/.test(state.textContent||'')))stopAlert()}catch(e){}}
+bellBtn.addEventListener('click',unlockAudio);
+document.addEventListener('touchstart',()=>{if(enabled&&audioCtx&&audioCtx.state==='suspended')audioCtx.resume()},{passive:true});
+frame.addEventListener('load',()=>setTimeout(inspectDriver,800));
+setInterval(inspectDriver,700);
+
+function innerDoc(){
+  try{
+    const outer=frame.contentDocument;
+    if(!outer)return null;
+    const inner=outer.getElementById('appFrame');
+    return inner&&inner.contentDocument?inner.contentDocument:null;
+  }catch(e){return null}
+}
+function showOuterRating(target){
+  if(outerRatingShown)return;
+  outerRatingShown=true;
+  outerRatingTarget=target;
+  outerRatingValue=0;
+  document.getElementById('ratingTitleOuter').textContent=target==='driver'?'Sürücüyü Puanla ⭐':'Yolcuyu Puanla ⭐';
+  document.getElementById('ratingSubOuter').textContent=target==='driver'?'Mehmet K. ile yolculuğun nasıldı?':'Yolcunuzla yolculuk nasıldı?';
+  document.getElementById('ratingCommentOuter').value='';
+  document.getElementById('ratingMsg').textContent='';
+  document.querySelectorAll('.rstar').forEach(b=>b.classList.remove('on'));
+  document.getElementById('ratingOverlay').classList.add('show');
+}
+function outerRating(n){
+  outerRatingValue=n;
+  document.querySelectorAll('.rstar').forEach((b,i)=>b.classList.toggle('on',i<n));
+}
+function sendOuterRating(){
+  if(!outerRatingValue){
+    document.getElementById('ratingMsg').textContent='Lütfen 1–5 yıldız arasında bir puan seç.';
+    return;
+  }
+  const key='bmRatings';
+  let list=[];
+  try{list=JSON.parse(localStorage.getItem(key)||'[]')}catch(e){}
+  list.unshift({
+    rating:outerRatingValue,
+    comment:document.getElementById('ratingCommentOuter').value.trim(),
+    role:outerRatingTarget==='driver'?'rider_to_driver':'driver_to_rider',
+    target:outerRatingTarget==='driver'?'Mehmet K.':'Yolcu',
+    t:new Date().toLocaleString('tr-TR')
+  });
+  localStorage.setItem(key,JSON.stringify(list.slice(0,20)));
+  document.getElementById('ratingMsg').textContent='✓ Puanın kaydedildi. Teşekkürler!';
+  const d=innerDoc();
+  try{
+    if(d){
+      const m=d.getElementById('ratingModal');
+      if(m)m.classList.remove('show');
+      if(typeof frame.contentWindow.closeModal==='function')frame.contentWindow.closeModal();
+    }
+  }catch(e){}
+  setTimeout(()=>{document.getElementById('ratingOverlay').classList.remove('show');outerRatingShown=false},500);
+}
+function skipOuterRating(){
+  const d=innerDoc();
+  try{
+    if(d){
+      const m=d.getElementById('ratingModal');
+      if(m)m.classList.remove('show');
+      if(typeof frame.contentWindow.closeModal==='function')frame.contentWindow.closeModal();
+    }
+  }catch(e){}
+  document.getElementById('ratingOverlay').classList.remove('show');
+  outerRatingShown=false;
+}
+function inspectRating(){
+  const d=innerDoc();
+  if(!d)return;
+  try{
+    const riderModal=d.getElementById('ratingModal');
+    if(riderModal && getComputedStyle(riderModal).display!=='none'){
+      riderModal.classList.remove('show');
+      showOuterRating('driver');
+      return;
+    }
+    const trip=d.getElementById('driverTrip');
+    const state=d.getElementById('driverState');
+    const tripVisible=trip&&getComputedStyle(trip).display!=='none';
+    if(tripVisible)driverWasInTrip=true;
+    const completed=driverWasInTrip && !tripVisible && state && /Müsait/.test(state.textContent||'');
+    if(completed && !outerRatingShown)showOuterRating('passenger');
+  }catch(e){}
+}
+setInterval(inspectRating,500);
+</script>
+</body>
+</html>
