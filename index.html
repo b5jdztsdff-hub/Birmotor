@@ -1,6 +1,6 @@
 <!doctype html><html lang="tr"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#101828"><title>Birmotor V15</title>
+<meta name="theme-color" content="#101828"><title>Birmotor V16</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 *{box-sizing:border-box}body{margin:0;background:#eef1f4;color:#101828;font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif}
@@ -28,7 +28,7 @@ nav{display:flex;justify-content:space-around;border-top:1px solid #eee;padding:
 <div class="search"><input id="q" placeholder="Nereye gideceksin?"><button onclick="searchAddress()">Ara</button></div><div id="results"></div>
 <div class="field"><span class="sq"></span><div><small>Hedef</small><strong id="dest">Hedef adres seç</strong></div></div>
 <div class="row"><div class="info"><small>Tahmini süre</small><b id="eta">—</b></div><div class="info"><small>Tahmini ücret</small><b id="fare">—</b></div></div>
-<button id="call" class="main" disabled onclick="callMotor()">🏍️ Motor Çağır</button></section></div>
+<button id="call" class="main" disabled onclick="callMotor()">🏍️ Motor Çağır</button><p class="muted" style="margin:10px 2px 0">Demo sürüş akışı: sürücü bul → onayla → başlat → tamamla.</p></section></div>
 <div id="history" class="view" style="display:none"><h2>Yolculuklarım</h2><p class="muted">Tamamlanan yolculukların burada görünür.</p><div id="historyList"></div></div>
 <div id="profile" class="view" style="display:none"><h2>Profil</h2>
 <div id="loggedOut" class="auth"><h3>Birmotor hesabın</h3><p class="muted">Gerçek hesabınla giriş yap veya yeni hesap oluştur.</p>
@@ -43,21 +43,65 @@ nav{display:flex;justify-content:space-around;border-top:1px solid #eee;padding:
 <button class="main" id="saveProfileBtn" type="button">Profili Kaydet</button><div id="saveStatus" class="muted" style="margin-top:10px;min-height:24px"></div><button class="main secondary" onclick="logout()">Çıkış Yap</button>
 <p class="muted">E-posta ve telefon bilgileriniz Appwrite'da tutuluyor.</p></div></div>
 <nav><button type="button" id="nHome" class="on" onclick="goTo('home')">⌂<br>Harita</button><button type="button" id="nHistory" onclick="goTo('history')">◷<br>Geçmiş</button><button type="button" id="nProfile" onclick="goTo('profile')">◎<br>Profil</button></nav></div>
-<div class="modal" id="modal"><div class="card"><h2 id="mtitle">Sürücü aranıyor</h2><p id="msub">Yakındaki sürücüler kontrol ediliyor.</p><div class="driver"><div class="pic">M</div><div><b>Mehmet K.</b><br><small>⭐ 4.9 · 2 dk uzakta · Siyah motor</small></div></div><div class="status" id="status">● Sürücü bulunuyor…</div><button class="main" onclick="advance()">Devam</button><button class="main secondary" onclick="closeModal()">İptal</button></div></div>
+<div class="modal" id="modal"><div class="card"><h2 id="mtitle">Sürücü aranıyor</h2><p id="msub">Yakındaki sürücüler kontrol ediliyor.</p><div class="driver"><div class="pic">M</div><div><b>Mehmet K.</b><br><small>⭐ 4.9 · 2 dk uzakta · Siyah motor · Plaka 34 BM 016</small></div></div><div class="status" id="status">● Sürücü bulunuyor…</div><button class="main" onclick="advance()">Devam</button><button class="main secondary" onclick="closeModal()">İptal</button></div></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/appwrite@17.0.0"></script>
 <script>
 const client=new Appwrite.Client().setEndpoint('https://fra.cloud.appwrite.io/v1').setProject('6ab3acf9003cbc22d2f3');
 const account=new Appwrite.Account(client);const tablesDB=Appwrite.TablesDB?new Appwrite.TablesDB(client):null;const DB_ID='6ab3b1cb000716abc746';const PROFILE_TABLE_ID='6ab3b214000c481e5201';let user=null;
-let map=L.map('map',{zoomControl:false}).setView([41.02,29.18],13),userPos=null,target=null,marker,routeLine,step=0,curDest='—',curFare='—',tripSaved=false;
+let map=L.map('map',{zoomControl:false}).setView([41.02,29.18],13),userPos=null,target=null,marker,driverMarker,routeLine,step=0,curDest='—',curFare='—',tripSaved=false;
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
 const $=x=>document.getElementById(x);
 function setUser(a,b){userPos=[a,b];if(marker)map.removeLayer(marker);marker=L.marker(userPos).addTo(map);map.setView(userPos,15);$('pickup').textContent='Mevcut konum'}
 function locate(){if(navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>setUser(p.coords.latitude,p.coords.longitude),()=>alert('Konum izni verilmedi.'));else alert('Konum desteklenmiyor.')}locate();
 async function searchAddress(){let q=$('q').value.trim();if(!q)return;$('results').innerHTML='<div class="result">Adres aranıyor…</div>';try{let r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=tr&q='+encodeURIComponent(q)),d=await r.json();window._results=d;$('results').innerHTML=d.length?d.map((x,i)=>'<div class="result" onclick="pick('+i+')">'+x.display_name+'</div>').join(''):'<div class="result">Adres bulunamadı.</div>'}catch(e){$('results').innerHTML='<div class="result">Arama kullanılamıyor.</div>'}}
 async function pick(i){let x=window._results[i],a=+x.lat,b=+x.lon;target=[a,b];curDest=x.display_name.split(',').slice(0,2).join(',');$('dest').textContent=curDest;$('results').innerHTML='';$('q').value='';if(!userPos){alert('Önce mevcut konumunuzu seçin.');return}if(routeLine)map.removeLayer(routeLine);try{let s=userPos[1]+','+userPos[0],e=b+','+a,r=await fetch('https://router.project-osrm.org/route/v1/driving/'+s+';'+e+'?overview=full&geometries=geojson'),d=await r.json(),rt=d.routes[0],km=rt.distance/1000,min=Math.max(1,Math.round(rt.duration/60)),fare=Math.max(45,Math.round(45+km*12));routeLine=L.geoJSON(rt.geometry,{style:{weight:5,opacity:.85}}).addTo(map);map.fitBounds(routeLine.getBounds(),{padding:[35,35]});$('eta').textContent=min+' dk';curFare='₺'+fare;$('fare').textContent=curFare;$('call').disabled=false}catch(e){alert('Rota hesaplanamadı.')}}
-function callMotor(){$('modal').classList.add('show');step=0;tripSaved=false;$('mtitle').textContent='Sürücü aranıyor';$('msub').textContent='Yakındaki sürücüler kontrol ediliyor.';$('status').textContent='● Sürücü bulunuyor…';$('modal').querySelector('.main').textContent='Devam'}
-function advance(){if(step===0){step=1;$('mtitle').textContent='Sürücü bulundu';$('msub').textContent='Mehmet K. konumunuza geliyor.';$('status').textContent='🏍️ Yaklaşık 2 dakika'}else if(step===1){step=2;$('mtitle').textContent='Yolculuk başladı';$('msub').textContent='Güvenli yolculuklar!';$('status').textContent='● Yolculuk devam ediyor'}else if(step===2){step=3;if(!tripSaved){saveTrip();tripSaved=true}$('mtitle').textContent='Yolculuk tamamlandı';$('msub').textContent='Demo yolculuk tamamlandı.';$('status').textContent='⭐ Puanlama ekranı hazır';$('modal').querySelector('.main').textContent='Kapat'}else closeModal()}
+function callMotor(){
+  if(!target){alert('Önce hedef adres seç.');return}
+  $('modal').classList.add('show');
+  step=0;tripSaved=false;
+  $('mtitle').textContent='Sürücü aranıyor';
+  $('msub').textContent='Yakındaki sürücüler kontrol ediliyor.';
+  $('status').textContent='● Sürücüler aranıyor…';
+  $('modal').querySelector('.main').textContent='Sürücüleri Göster';
+  if(driverMarker){map.removeLayer(driverMarker);driverMarker=null}
+}
+function addDriverMarker(){
+  if(!userPos)return;
+  const dLat=userPos[0]+0.006,dLon=userPos[1]+0.008;
+  driverMarker=L.marker([dLat,dLon]).addTo(map).bindPopup('🏍️ Mehmet K. · 2 dk');
+}
+function advance(){
+  if(step===0){
+    step=1;
+    addDriverMarker();
+    $('mtitle').textContent='Sürücü bulundu';
+    $('msub').textContent='Mehmet K. size yaklaşık 2 dakika uzaklıkta.';
+    $('status').textContent='🏍️ Mehmet K. · ⭐ 4.9 · Siyah motor';
+    $('modal').querySelector('.main').textContent='Yolculuğu Onayla';
+  }else if(step===1){
+    step=2;
+    $('mtitle').textContent='Yolculuk onaylandı';
+    $('msub').textContent='Sürücü konumunuza geliyor.';
+    $('status').textContent='📍 Sürücü 2 dakika içinde burada';
+    $('modal').querySelector('.main').textContent='Yolculuğu Başlat';
+  }else if(step===2){
+    step=3;
+    $('mtitle').textContent='Yolculuk başladı';
+    $('msub').textContent=curDest+' yönüne gidiyorsunuz.';
+    $('status').textContent='🏍️ Yolculuk devam ediyor · '+curFare;
+    $('modal').querySelector('.main').textContent='Yolculuğu Tamamla';
+  }else if(step===3){
+    step=4;
+    if(!tripSaved){saveTrip();tripSaved=true;renderHistory()}
+    $('mtitle').textContent='Yolculuk tamamlandı';
+    $('msub').textContent='Birmotor yolculuğunuz tamamlandı.';
+    $('status').textContent='⭐ Yolculuk kaydedildi · '+curFare;
+    $('modal').querySelector('.main').textContent='Kapat';
+  }else{
+    closeModal();
+  }
+}
 function closeModal(){$('modal').classList.remove('show')}
 function saveTrip(){let a=JSON.parse(localStorage.getItem('bmTrips')||'[]');a.unshift({d:curDest,f:curFare,t:new Date().toLocaleString('tr-TR')});localStorage.setItem('bmTrips',JSON.stringify(a.slice(0,20)))}
 function renderHistory(){let a=JSON.parse(localStorage.getItem('bmTrips')||'[]');$('historyList').innerHTML=a.length?a.map(x=>'<div class="item"><b>🏍️ '+x.d+'</b><div class="muted">'+x.t+'</div><b>'+x.f+'</b></div>').join(''):'<div class="muted">Henüz tamamlanan yolculuk yok.</div>'}
