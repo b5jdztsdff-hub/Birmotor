@@ -1,0 +1,795 @@
+<!doctype html><html lang="tr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101828"><title>Birmotor V36 - Zil Ses Fix</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eef1f4;color:#101828;font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif}
+.app{max-width:520px;margin:auto;min-height:100vh;background:#fff}.head{height:64px;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #eee}
+.logo{font-size:25px;font-weight:850}.logo span{color:#16a34a}.avatar{border:0;background:#101828;color:#fff;width:40px;height:40px;border-radius:50%;font-weight:700}
+#map{height:45vh;min-height:320px}.loc{position:absolute;right:16px;top:14px;z-index:5;border:0;border-radius:50%;background:#fff;width:44px;height:44px;font-size:21px}
+.sheet{padding:18px 16px 26px;border-radius:24px 24px 0 0;margin-top:-18px;background:#fff;position:relative;z-index:3;box-shadow:0 -5px 20px #0001}
+.field,.info{border:1px solid #e4e7ec;border-radius:14px;padding:12px;margin-bottom:10px}.field{display:flex;gap:10px;align-items:center}
+.dot{width:10px;height:10px;border-radius:50%;background:#12b76a}.sq{width:10px;height:10px;background:#101828;border-radius:2px}small{color:#667085}
+.search{display:flex;gap:8px}.search input,.input{flex:1;border:1px solid #e4e7ec;border-radius:12px;padding:12px;font-size:15px}
+.search button,.main{border:0;border-radius:12px;background:#101828;color:#fff;font-weight:700}.search button{padding:0 15px}.result{padding:10px;border-bottom:1px solid #eee;font-size:14px}
+.row{display:flex;gap:10px}.info{flex:1;background:#f8f9fb}.info b{display:block;margin-top:4px}.main{width:100%;padding:16px;font-size:17px}.main:disabled{opacity:.45}
+nav{display:flex;justify-content:space-around;border-top:1px solid #eee;padding:12px 6px 18px;position:sticky;bottom:0;background:#fff;z-index:50}nav button{border:0;background:none;color:#667085}nav .on{color:#101828;font-weight:700}
+.view{padding:18px 16px 30px}.item{border:1px solid #eaecf0;border-radius:14px;padding:13px;margin:9px 0}.muted{color:#667085;font-size:13px}
+.formGroup{margin-bottom:14px}.formGroup label{display:block;color:#475467;font-size:14px;font-weight:700;margin:0 0 7px}.input{width:100%;display:block}
+.auth{border:1px solid #e4e7ec;border-radius:16px;padding:16px;background:#fafafa}.auth h3{margin:0 0 6px}.authActions{display:flex;gap:8px}.authActions button{flex:1}.secondary{background:#f2f4f7;color:#101828;margin-top:8px}
+.err{display:none;background:#fef3f2;color:#b42318;padding:10px;border-radius:10px;margin:10px 0;font-size:14px}.ok{background:#ecfdf3;color:#067647;padding:10px;border-radius:10px;margin:10px 0;font-size:14px}
+.modal{display:none;position:fixed;inset:0;background:#0007;z-index:1000;align-items:flex-end;padding:0}
+.modal.show{display:flex}
+.modal .card{width:min(520px,100%);max-height:88vh;overflow-y:auto;margin:auto;background:#fff;border-radius:24px 24px 0 0;padding:22px 18px calc(30px + env(safe-area-inset-bottom));position:relative;z-index:1001}
+.modal .card .main{position:relative;z-index:1002}
+.pic{width:52px;height:52px;border-radius:50%;background:#101828;color:#fff;display:grid;place-items:center;font-weight:700}.driver{display:flex;gap:12px;align-items:center;padding:14px 0}
+.status{padding:11px;border-radius:11px;background:#ecfdf3;color:#067647;margin:10px 0}
+.rating{display:flex;justify-content:center;gap:8px;margin:18px 0}
+.driverPanel{background:#fff;border:1px solid #e4e7ec;border-radius:18px;padding:16px;margin-top:14px}
+.driverToggle{display:flex;align-items:center;justify-content:space-between;background:#f2f4f7;border-radius:14px;padding:14px;margin-bottom:12px}
+.driverToggle button{border:0;border-radius:10px;padding:10px 14px;font-weight:700;background:#101828;color:#fff}
+.request{border:1px solid #e4e7ec;border-radius:14px;padding:14px;margin-top:12px}
+.requestActions{display:flex;gap:8px;margin-top:12px}.requestActions button{flex:1}
+.driverBadge{display:inline-block;padding:6px 10px;border-radius:999px;background:#ecfdf3;color:#067647;font-weight:700}.star{border:0;background:#f2f4f7;border-radius:12px;width:48px;height:48px;font-size:27px}.star.on{background:#fff4cc}.comment{width:100%;min-height:90px;border:1px solid #e4e7ec;border-radius:12px;padding:12px;font-size:15px;resize:none}
+
+#bellBtn.on{background:#2e7d50!important}
+#bellNotice{display:none;position:fixed;left:14px;right:14px;top:76px;z-index:9000;background:#fff8d9;border:3px solid #f2cf52;border-radius:18px;padding:15px;text-align:center;font-weight:850;font-size:18px;box-shadow:0 8px 30px #0002}
+#bellNotice.show{display:block;animation:pulse 1.2s infinite}
+@keyframes pulse{50%{transform:scale(1.015)}}
+</style></head><body><div class="app">
+<header class="head"><div class="logo">Bir<span>motor</span></div><div style="display:flex;gap:8px;align-items:center"><button id="bellBtn" type="button" style="border:0;border-radius:999px;background:#101828;color:#fff;padding:10px 13px;font-weight:700">🔔 Sesi Aç</button><button class="avatar" id="topAvatar" type="button" onclick="goTo('profile')" style="position:relative;z-index:1000;pointer-events:auto;touch-action:manipulation">Ş</button></div></header>
+<div id="bellNotice">🔔 YENİ YOLCULUK ÇAĞRISI</div><div id="home"><div style="position:relative"><div id="map"></div><button class="loc" onclick="locate()">⌖</button></div>
+<section class="sheet"><div class="field"><span class="dot"></span><div><small>Alınacak konum</small><strong id="pickup">Konum alınmadı</strong></div></div>
+<div class="search"><input id="q" placeholder="Nereye gideceksin?"><button onclick="searchAddress()">Ara</button></div><div id="results"></div>
+<div class="field"><span class="sq"></span><div><small>Hedef</small><strong id="dest">Hedef adres seç</strong></div></div>
+<div class="row"><div class="info"><small>Tahmini süre</small><b id="eta">—</b></div><div class="info"><small>Tahmini ücret</small><b id="fare">—</b></div></div>
+<button id="call" class="main" disabled onclick="callMotor()">🏍️ Motor Çağır</button><p class="muted" style="margin:10px 2px 0">Demo sürüş akışı: sürücü bul → onayla → başlat → tamamla.</p></section></div>
+<div id="history" class="view" style="display:none"><h2>Yolculuklarım</h2><p class="muted">Tamamlanan yolculukların burada görünür.</p><div id="historyList"></div></div>
+
+<div id="driver" class="view" style="display:none">
+<section class="sheet">
+<h2>Sürücü Paneli</h2>
+<p class="muted">Yakındaki yolculuk isteklerini buradan yönet.</p>
+<div class="driverPanel">
+<div id="liveStatus" class="muted" style="margin:0 0 10px">☁️ Gerçek zamanlı bağlantı hazırlanıyor…</div>
+<div class="driverToggle">
+<div><b>Sürücü durumu</b><br><span id="driverState" class="driverBadge">Müsait değil</span></div>
+<button id="driverToggleBtn" type="button" onclick="toggleDriver()">Müsait Ol</button>
+</div>
+<div id="driverRequest" class="request" style="display:none">
+<b>🏍️ Yeni yolculuk isteği</b>
+<p class="driver-request-text" style="margin:8px 0">📍 Sarıgazi → Sultangazi<br><span class="muted">Tahmini 18 dk · ₺542</span></p>
+<div class="requestActions">
+<button class="main" type="button" onclick="acceptRide()">Kabul Et</button>
+<button class="main secondary" type="button" onclick="rejectRide()">Reddet</button>
+</div>
+</div>
+<div id="driverTrip" class="request" style="display:none">
+<b>🚦 Yolculuk aktif</b>
+<p style="margin:8px 0">Yolcu alım noktasına ilerliyorsun.</p>
+<p class="muted">Tahmini kazanç: ₺542</p>
+<button class="main" type="button" onclick="finishDriverRide()">Yolculuğu Tamamla</button>
+</div>
+<div id="driverLocationStatus" class="muted" style="margin-top:10px">📍 Sürücü konumu bekleniyor…</div><div id="driverEmpty" class="muted" style="margin-top:12px">Müsait olduğunda yeni istekler burada görünecek.</div>
+</div>
+</section>
+</div>
+<div id="profile" class="view" style="display:none"><h2>Profil</h2>
+<div id="loggedOut" class="auth"><h3>Birmotor hesabın</h3><p class="muted">Gerçek hesabınla giriş yap veya yeni hesap oluştur.</p>
+<div class="formGroup"><label>Ad Soyad</label><input class="input" id="an" placeholder="Ad Soyad"></div>
+<div class="formGroup"><label>E-posta</label><input class="input" id="ae" type="email" placeholder="ornek@mail.com" autocomplete="email"></div>
+<div class="formGroup"><label>Şifre</label><input class="input" id="ap" type="password" placeholder="En az 8 karakter" autocomplete="current-password"></div>
+<div id="err" class="err"></div><div class="authActions"><button class="main" onclick="login()">Giriş Yap</button><button class="main" onclick="register()">Kayıt Ol</button></div>
+</div>
+<div id="loggedIn" style="display:none"><div class="field"><div class="pic" id="pa">Ş</div><div><b id="pn">—</b><div class="muted" id="pe">—</div></div></div>
+<div class="formGroup"><label>Ad Soyad</label><input class="input" id="name"></div>
+<div class="formGroup"><label>Telefon</label><input class="input" id="phone" placeholder="05xx xxx xx xx" inputmode="tel"></div>
+<button class="main" id="saveProfileBtn" type="button">Profili Kaydet</button><div id="saveStatus" class="muted" style="margin-top:10px;min-height:24px"></div><button class="main secondary" onclick="logout()">Çıkış Yap</button>
+<p class="muted">E-posta ve telefon bilgileriniz Appwrite'da tutuluyor.</p></div></div>
+<nav><button type="button" id="nHome" class="on" onclick="goTo('home')">⌂<br>Harita</button><button type="button" id="nHistory" onclick="goTo('history')">◷<br>Geçmiş</button><button type="button" id="nDriver" onclick="goTo('driver')">🏍️<br>Sürücü</button><button type="button" id="nProfile" onclick="goTo('profile')">◎<br>Profil</button></nav></div>
+<div class="modal" id="modal"><div class="card"><h2 id="mtitle">Sürücü aranıyor</h2><p id="msub">Yakındaki sürücüler kontrol ediliyor.</p><div class="driver"><div class="pic">M</div><div><b>Mehmet K.</b><br><small>⭐ 4.9 · 2 dk uzakta · Siyah motor · Plaka 34 BM 016</small></div></div><div class="status" id="status">● Sürücü bulunuyor…</div><button id="advanceBtn" class="main" type="button" onclick="safeAdvance()">Devam</button><button class="main secondary" onclick="closeModal()">İptal</button></div></div>
+<div class="modal" id="ratingModal"><div class="card">
+<h2>Yolculuğu Puanla ⭐</h2><p class="muted">Mehmet K. ile yolculuğun nasıldı?</p>
+<div class="rating" id="ratingStars">
+<button class="star" onclick="setRating(1)">★</button><button class="star" onclick="setRating(2)">★</button><button class="star" onclick="setRating(3)">★</button><button class="star" onclick="setRating(4)">★</button><button class="star" onclick="setRating(5)">★</button>
+</div>
+<textarea id="ratingComment" class="comment" placeholder="İstersen yorum bırakabilirsin..."></textarea>
+<div id="ratingStatus" class="muted" style="margin:10px 0;min-height:20px"></div>
+<button class="main" onclick="submitRating()">Puanı Gönder</button>
+<button class="main secondary" onclick="closeRating()">Daha Sonra</button>
+</div></div>
+
+<div class="modal" id="driverRatingModal"><div class="card">
+<h2>Yolcuyu Puanla ⭐</h2>
+<p class="muted">Yolcunuzla yolculuk nasıldı?</p>
+<div class="rating" id="driverRatingStars">
+<button class="star" onclick="setDriverRating(1)">★</button><button class="star" onclick="setDriverRating(2)">★</button><button class="star" onclick="setDriverRating(3)">★</button><button class="star" onclick="setDriverRating(4)">★</button><button class="star" onclick="setDriverRating(5)">★</button>
+</div>
+<textarea id="driverRatingComment" class="comment" placeholder="İstersen yorum bırakabilirsin..."></textarea>
+<div id="driverRatingStatus" class="muted" style="margin:10px 0;min-height:20px"></div>
+<button class="main" onclick="submitDriverRating()">Puanı Gönder</button>
+<button class="main secondary" onclick="closeDriverRating()">Daha Sonra</button>
+</div></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/appwrite@27.0.0"></script>
+<script>
+const client=new Appwrite.Client().setEndpoint('https://fra.cloud.appwrite.io/v1').setProject('6ab3acf9003cbc22d2f3');
+const account=new Appwrite.Account(client);const tablesDB=Appwrite.TablesDB?new Appwrite.TablesDB(client):null;const realtime=Appwrite.Realtime?new Appwrite.Realtime(client):null;const channel=Appwrite.Channel||null;const DB_ID='6ab3b1cb000716abc746';const PROFILE_TABLE_ID='6ab3b214000c481e5201';const RIDE_TABLE_ID='6ab3e9a9002593b08c57';let user=null,rideSubscription=null,liveRide=null,driverWatchId=null,driverLocationTimer=null;
+let map=L.map('map',{zoomControl:false}).setView([41.02,29.18],13),userPos=null,target=null,marker,driverMarker,routeLine,step=0,curDest='—',curFare='—',tripSaved=false,rating=0,driverRating=0,driverRatingShown=false,bellEnabled=false,bellTimer=null,audioCtx=null;
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+const $=x=>document.getElementById(x);
+function setUser(a,b){userPos=[a,b];if(marker)map.removeLayer(marker);marker=L.marker(userPos).addTo(map);map.setView(userPos,15);$('pickup').textContent='Mevcut konum'}
+function locate(){if(navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>setUser(p.coords.latitude,p.coords.longitude),()=>alert('Konum izni verilmedi.'));else alert('Konum desteklenmiyor.')}locate();
+async function searchAddress(){let q=$('q').value.trim();if(!q)return;$('results').innerHTML='<div class="result">Adres aranıyor…</div>';try{let r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=tr&q='+encodeURIComponent(q)),d=await r.json();window._results=d;$('results').innerHTML=d.length?d.map((x,i)=>'<div class="result" onclick="pick('+i+')">'+x.display_name+'</div>').join(''):'<div class="result">Adres bulunamadı.</div>'}catch(e){$('results').innerHTML='<div class="result">Arama kullanılamıyor.</div>'}}
+async function pick(i){let x=window._results[i],a=+x.lat,b=+x.lon;target=[a,b];curDest=x.display_name.split(',').slice(0,2).join(',');$('dest').textContent=curDest;$('results').innerHTML='';$('q').value='';if(!userPos){alert('Önce mevcut konumunuzu seçin.');return}if(routeLine)map.removeLayer(routeLine);try{let s=userPos[1]+','+userPos[0],e=b+','+a,r=await fetch('https://router.project-osrm.org/route/v1/driving/'+s+';'+e+'?overview=full&geometries=geojson'),d=await r.json(),rt=d.routes[0],km=rt.distance/1000,min=Math.max(1,Math.round(rt.duration/60)),fare=Math.max(45,Math.round(45+km*12));routeLine=L.geoJSON(rt.geometry,{style:{weight:5,opacity:.85}}).addTo(map);map.fitBounds(routeLine.getBounds(),{padding:[35,35]});$('eta').textContent=min+' dk';curFare='₺'+fare;$('fare').textContent=curFare;syncCallButton()}catch(e){alert('Rota hesaplanamadı.')}}
+async function callMotor(){
+  const existing=getLiveRide();
+  if(existing && ['accepted','started'].includes(existing.status)){alert('Devam eden bir yolculuk var. Önce bu yolculuğu tamamlayın.');return}
+  if(existing && existing.status==='requested'){liveRide=null;localStorage.removeItem(RIDE_KEY)}
+  if(!target){alert('Önce hedef adres seç.');return}
+  if(!user){alert('Gerçek zamanlı yolculuk için önce Profil bölümünden giriş yap.');goTo('profile');return}
+  $('modal').classList.add('show');
+  step=0;tripSaved=false;
+  const base={status:'requested',dest:curDest,eta:$('eta').textContent,fare:curFare,createdAt:new Date().toISOString()};
+  try{
+    liveRide=await createCloudRide(base);
+    localStorage.setItem(RIDE_KEY,JSON.stringify(liveRide));
+    setLiveStatus('🟢 Yolculuk isteği buluta gönderildi',true);
+  }catch(e){
+    console.warn('Cloud ride oluşturulamadı:',e);
+    setLiveRide(base);
+    setLiveStatus('⚠️ Demo bağlantısı kullanılıyor.');
+  }
+  $('mtitle').textContent='Sürücü aranıyor';
+  $('msub').textContent='Yakındaki sürücüler kontrol ediliyor.';
+  $('status').textContent='● Sürücüler aranıyor…';
+  $('advanceBtn').textContent='Sürücüleri Göster';
+  if(driverMarker){map.removeLayer(driverMarker);driverMarker=null}
+  syncCallButton();
+}
+function addDriverMarker(){
+  if(!userPos)return;
+  const dLat=userPos[0]+0.006,dLon=userPos[1]+0.008;
+  driverMarker=L.marker([dLat,dLon]).addTo(map).bindPopup('🏍️ Sürücü · 2 dk');
+}
+async function refreshSingleCloudRide(){
+  const r=getLiveRide();
+  if(!tablesDB||!r||!r.rowId)return r;
+  try{
+    const row=await tablesDB.getRow({databaseId:DB_ID,tableId:RIDE_TABLE_ID,rowId:r.rowId});
+    liveRide={...row,rowId:row.$id};
+    localStorage.setItem(RIDE_KEY,JSON.stringify(liveRide));
+    renderDriverFromLive();renderRiderFromLive();
+    return liveRide;
+  }catch(e){console.warn('Tekil yolculuk okunamadı:',e);return r}
+}
+async function safeAdvance(){
+  const b=$('advanceBtn');
+  if(b){b.disabled=true;b.textContent='İşleniyor…';}
+  try{
+    if(step===0){
+      let r=getLiveRide();
+      // Cloud check is best-effort; never let a slow Appwrite request block the button.
+      if(r && r.rowId && tablesDB){
+        try{ r=await Promise.race([refreshSingleCloudRide(),new Promise(resolve=>setTimeout(()=>resolve(r),1500))]); }catch(e){console.warn('Cloud kontrolü atlandı:',e)}
+      }
+      if(r && r.status==='accepted'){
+        $('mtitle').textContent='Sürücü bulundu'; $('msub').textContent='Sürücü yolculuğu kabul etti.'; $('status').textContent='🏍️ Sürücü bulundu'; $('advanceBtn').textContent='Yolculuğu Başlat'; step=1; addDriverMarker(); return;
+      }
+      if(r && r.status==='started'){
+        $('mtitle').textContent='Yolculuk başladı'; $('msub').textContent='Sürücü yolcuya gidiyor.'; $('status').textContent='🟢 Yolculuk aktif'; $('advanceBtn').textContent='Yolculuğu Tamamla'; step=2; addDriverMarker(); return;
+      }
+      // If the cloud response is slow/unavailable, continue the demo flow immediately.
+      addDriverMarker(); $('mtitle').textContent='Sürücü bulundu'; $('msub').textContent='Demo sürücü bulundu.'; $('status').textContent='🏍️ Sürücü bulundu'; $('advanceBtn').textContent='Yolculuğu Başlat'; step=1; return;
+    }
+    await advance();
+  }catch(e){
+    console.warn('İleri adım hatası:',e);
+    alert('İşlem sırasında bağlantı bekledi. Tekrar deneyebilirsin.');
+  }finally{
+    if(b){b.disabled=false;if(step===0)b.textContent='Sürücüleri Göster';else if(step===1)b.textContent='Yolculuğu Başlat';else if(step===2||step===3)b.textContent='Yolculuğu Tamamla';}
+  }
+}
+async function advance(){
+  let r=getLiveRide();
+  if(step===0){
+    r=await refreshSingleCloudRide();
+    if(r && (r.status==='accepted'||r.status==='started')){
+      if(r.status==='accepted'){
+        $('mtitle').textContent='Sürücü bulundu';
+        $('msub').textContent='Sürücü yolculuğu kabul etti.';
+        $('status').textContent='🏍️ Sürücü bulundu';
+        $('advanceBtn').textContent='Yolculuğu Başlat';
+        step=1;
+      }else{
+        $('mtitle').textContent='Yolculuk başladı';
+        $('msub').textContent='Sürücü yolcuya gidiyor.';
+        $('status').textContent='🟢 Yolculuk aktif';
+        $('advanceBtn').textContent='Yolculuğu Tamamla';
+        step=2;
+      }
+      addDriverMarker();
+      return;
+    }
+    if(r && r.status==='requested'){
+      $('status').textContent='● Sürücü bekleniyor…';
+      return;
+    }
+    step=1;
+    addDriverMarker();
+    $('mtitle').textContent='Sürücü bulundu';
+    $('msub').textContent='Demo sürücü bulundu.';
+    $('status').textContent='🏍️ Sürücü bulundu';
+    $('advanceBtn').textContent='Yolculuğu Başlat';
+  }else if(step===1){
+    step=2;
+    const live=getLiveRide();
+    if(live){live.status='started';live.startedAt=new Date().toISOString();setLiveRide(live);updateCloudRide(live)}
+    $('mtitle').textContent='Yolculuk başladı';
+    $('msub').textContent=curDest+' yönüne gidiyorsunuz.';
+    $('status').textContent='🏍️ Yolculuk devam ediyor · '+curFare;
+    $('advanceBtn').textContent='Yolculuğu Tamamla';
+  }else if(step===2 || step===3){
+    step=4;
+    const live=getLiveRide();
+    if(live){live.status='completed';live.completedAt=new Date().toISOString();setLiveRide(live);updateCloudRide(live)}
+    if(!tripSaved){saveTrip();tripSaved=true;renderHistory()}
+    $('mtitle').textContent='Yolculuk tamamlandı';
+    $('msub').textContent='Birmotor yolculuğunuz tamamlandı.';
+    $('status').textContent='⭐ Yolculuk kaydedildi · '+curFare;
+    $('advanceBtn').textContent='Puanla';
+    setTimeout(()=>openRating(),150);
+  }else{
+    closeModal();
+    clearLiveRide();
+    syncCallButton();
+  }
+}
+function closeModal(){$('modal').classList.remove('show')}
+function openRating(){$('ratingModal').classList.add('show');setRating(0);$('ratingComment').value='';$('ratingStatus').textContent=''}
+function closeRating(){
+  $('ratingModal').classList.remove('show');
+  const r=getLiveRide();
+  if(r && r.status==='completed'){ clearLiveRide(); }
+  syncCallButton();
+}
+function setRating(n){
+  rating=n;
+  [...$('ratingStars').querySelectorAll('.star')].forEach((b,i)=>b.classList.toggle('on',i<n));
+}
+function submitRating(){
+  if(!rating){$('ratingStatus').textContent='Lütfen 1–5 yıldız arasında bir puan seç.';return}
+  let a=JSON.parse(localStorage.getItem('bmRatings')||'[]');
+  a.unshift({rating,comment:$('ratingComment').value.trim(),role:'passenger_to_driver',driver:'Mehmet K.',fare:curFare,t:new Date().toLocaleString('tr-TR')});
+  localStorage.setItem('bmRatings',JSON.stringify(a.slice(0,20)));
+  $('ratingStatus').textContent='✓ Puanın kaydedildi. Teşekkürler!';
+  setTimeout(()=>{closeRating();closeModal()},700);
+}
+function saveTrip(){let a=JSON.parse(localStorage.getItem('bmTrips')||'[]');a.unshift({d:curDest,f:curFare,t:new Date().toLocaleString('tr-TR')});localStorage.setItem('bmTrips',JSON.stringify(a.slice(0,20)))}
+function renderHistory(){let a=JSON.parse(localStorage.getItem('bmTrips')||'[]');$('historyList').innerHTML=a.length?a.map(x=>'<div class="item"><b>🏍️ '+x.d+'</b><div class="muted">'+x.t+'</div><b>'+x.f+'</b></div>').join(''):'<div class="muted">Henüz tamamlanan yolculuk yok.</div>'}
+function goTo(v){
+  if(!['home','history','driver','profile'].includes(v)) v='home';
+  ['home','history','driver','profile'].forEach(x=>$(x).style.display=(x===v?'block':'none'));
+  ['nHome','nHistory','nDriver','nProfile'].forEach(x=>$(x).classList.remove('on'));
+  const btn=$('n'+v.charAt(0).toUpperCase()+v.slice(1));
+  if(btn)btn.classList.add('on');
+  if(v==='history')renderHistory();
+  if(v==='profile')refresh();
+  if(v==='home')setTimeout(()=>map.invalidateSize(),100);
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  const bind=(id,view)=>{
+    const el=$(id); if(!el)return;
+    el.addEventListener('click',()=>goTo(view));
+  };
+  bind('nHome','home');
+  bind('nHistory','history');
+  bind('nDriver','driver');
+  bind('nProfile','profile');
+  const avatar=$('topAvatar');
+  if(avatar) avatar.addEventListener('click',()=>goTo('profile'));
+});
+function err(m){$('err').textContent=m;$('err').style.display='block'}
+function clearErr(){$('err').style.display='none'}
+async function register(){clearErr();let n=$('an').value.trim(),e=$('ae').value.trim(),p=$('ap').value;if(!n||!e||!p)return err('Ad, e-posta ve şifreyi doldur.');if(p.length<8)return err('Şifre en az 8 karakter olmalı.');try{await account.create(Appwrite.ID.unique(),e,p,n);await account.createEmailPasswordSession(e,p);user=await account.get();await ensureProfileRow('');$('ap').value='';await refresh();alert('Hesap oluşturuldu ve giriş yapıldı.')}catch(x){err(x.message||'Kayıt başarısız.')}}
+async function login(){clearErr();let e=$('ae').value.trim(),p=$('ap').value;if(!e||!p)return err('E-posta ve şifreyi gir.');try{await account.createEmailPasswordSession(e,p);user=await account.get();$('ap').value='';await refresh();alert('Giriş başarılı.')}catch(x){err(x.message||'Giriş yapılamadı.')}}
+async function logout(){try{if(rideSubscription)rideSubscription.unsubscribe();if(realtime)realtime.disconnect()}catch(x){}try{await account.deleteSession({sessionId:'current'})}catch(x){}user=null;liveRide=null;localStorage.removeItem(RIDE_KEY);await refresh();alert('Çıkış yapıldı.')}
+async function loadProfileRow(){
+  if(!user||!tablesDB)return null;
+  try{
+    return await tablesDB.getRow({databaseId:DB_ID,tableId:PROFILE_TABLE_ID,rowId:user.$id});
+  }catch(x){
+    return null;
+  }
+}
+async function ensureProfileRow(phone=''){
+  if(!user||!tablesDB)return null;
+  try{
+    return await tablesDB.getRow({databaseId:DB_ID,tableId:PROFILE_TABLE_ID,rowId:user.$id});
+  }catch(x){
+    return await tablesDB.createRow({
+      databaseId:DB_ID,
+      tableId:PROFILE_TABLE_ID,
+      rowId:user.$id,
+      data:{userId:user.$id,phone:phone||''},
+      permissions:[
+        Appwrite.Permission.read(Appwrite.Role.user(user.$id)),
+        Appwrite.Permission.update(Appwrite.Role.user(user.$id)),
+        Appwrite.Permission.delete(Appwrite.Role.user(user.$id))
+      ]
+    });
+  }
+}
+async function refresh(){
+  if(user){
+    $('loggedOut').style.display='none';
+    $('loggedIn').style.display='block';
+
+    const local=JSON.parse(localStorage.getItem('bmProfile_'+user.$id)||'{}');
+    const displayName=local.name||user.name||'Birmotor kullanıcısı';
+    const displayPhone=local.phone||'';
+
+    $('pn').textContent=displayName;
+    $('pe').textContent=user.email||'';
+    $('name').value=displayName;
+    $('phone').value=displayPhone;
+    $('pa').textContent=displayName[0]||'Ş';
+    $('topAvatar').textContent=displayName[0]||'Ş';
+
+    try{
+      const row=await loadProfileRow();
+      if(row && row.phone!=null && !displayPhone){
+        $('phone').value=row.phone||'';
+      }
+    }catch(e){}
+  }else{
+    $('loggedOut').style.display='block';
+    $('loggedIn').style.display='none';
+    $('topAvatar').textContent='Ş';
+  }
+}
+async function saveProfile(){
+  clearErr();
+  const btn=$('saveProfileBtn');
+  const status=$('saveStatus');
+  const n=$('name').value.trim()||'Birmotor kullanıcısı';
+  const p=$('phone').value.trim();
+
+  if(!user){err('Önce giriş yapmalısın.');return;}
+
+  if(btn){btn.disabled=true;btn.textContent='Kaydediliyor...';}
+  if(status)status.textContent='Profil kaydediliyor…';
+
+  // Önce telefona kaydet: Appwrite çalışmasa bile profil kaybolmaz.
+  localStorage.setItem('bmProfile_'+user.$id,JSON.stringify({
+    name:n,phone:p,savedAt:new Date().toISOString()
+  }));
+
+  // Appwrite varsa ayrıca senkronize etmeyi dene.
+  let cloudSaved=false;
+  try{
+    if(tablesDB){
+      let row=null;
+      try{
+        row=await tablesDB.getRow({
+          databaseId:DB_ID,tableId:PROFILE_TABLE_ID,rowId:user.$id
+        });
+      }catch(e){}
+
+      const permissions=[
+        Appwrite.Permission.read(Appwrite.Role.user(user.$id)),
+        Appwrite.Permission.update(Appwrite.Role.user(user.$id)),
+        Appwrite.Permission.delete(Appwrite.Role.user(user.$id))
+      ];
+      const data={userId:user.$id,phone:p};
+
+      if(row){
+        await tablesDB.updateRow({
+          databaseId:DB_ID,tableId:PROFILE_TABLE_ID,rowId:user.$id,data,permissions
+        });
+      }else{
+        await tablesDB.createRow({
+          databaseId:DB_ID,tableId:PROFILE_TABLE_ID,rowId:user.$id,data,permissions
+        });
+      }
+      cloudSaved=true;
+    }
+  }catch(e){
+    console.warn('Appwrite profil senkronizasyonu başarısız:',e);
+  }
+
+  try{
+    user=await account.updateName(n);
+  }catch(e){
+    // Appwrite isim güncellemesi başarısız olsa bile yerel kayıt korunur.
+    console.warn('Hesap adı güncellenemedi:',e);
+  }
+
+  // Ekranı beklemeden güncelle; ardından Appwrite durumunu yenile.
+  $('pn').textContent=n;
+  $('name').value=n;
+  $('phone').value=p;
+  $('pa').textContent=n[0]||'Ş';
+  $('topAvatar').textContent=n[0]||'Ş';
+  await refresh();
+  if(status)status.textContent=cloudSaved
+    ? '✓ Profil kaydedildi ve Appwrite ile eşitlendi.'
+    : '✓ Profil telefona kaydedildi.';
+
+  if(btn){btn.disabled=false;btn.textContent='Profili Kaydet';}
+}
+
+// Profil kaydetme butonu
+window.addEventListener('DOMContentLoaded',()=>{
+  const b=$('saveProfileBtn');
+  if(b){
+    b.addEventListener('click',saveProfile);
+  }
+});
+
+async function init(){try{user=await account.get()}catch(x){user=null}await refresh();renderHistory();await initRealtime()}init();
+
+// V26: Gerçek sürücü konumu ve yolcuya mesafe gösterimi eklendi.
+const RIDE_KEY='bmLiveRide';
+function getLiveRide(){return liveRide || (()=>{try{return JSON.parse(localStorage.getItem(RIDE_KEY)||'null')}catch(e){return null}})()}
+function setLiveRide(obj){liveRide=obj||null; if(obj)localStorage.setItem(RIDE_KEY,JSON.stringify(obj)); else localStorage.removeItem(RIDE_KEY); window.dispatchEvent(new Event('bmRideChanged'))}
+function clearLiveRide(){liveRide=null;localStorage.removeItem(RIDE_KEY);window.dispatchEvent(new Event('bmRideChanged'))}
+function setLiveStatus(msg,ok=false){const el=$('liveStatus');if(el){el.textContent=msg;el.style.color=ok?'#067647':'#667085'}}
+async function initRealtime(){
+  if(!realtime||!tablesDB){setLiveStatus('⚠️ Appwrite Realtime kullanılamıyor (SDK kontrolü).');return}
+  if(!user){setLiveStatus('☁️ Gerçek zamanlı bağlantı için giriş yap.');return}
+  try{
+    if(rideSubscription) rideSubscription.unsubscribe();
+    const rideChannel = channel && channel.tablesdb
+      ? channel.tablesdb(DB_ID).table(RIDE_TABLE_ID).row()
+      : `tablesdb.${DB_ID}.tables.${RIDE_TABLE_ID}.rows`;
+    rideSubscription=await realtime.subscribe(
+      rideChannel,
+      response=>{
+        const p=response&&response.payload;
+        if(!p||!p.$id)return;
+        const mine=user && p.riderId===user.$id;
+        const requested=p.status==='requested';
+        if(mine || (driverOnline && requested) || (liveRide && liveRide.$id===p.$id)){
+          liveRide={...p,rowId:p.$id};
+          localStorage.setItem(RIDE_KEY,JSON.stringify(liveRide));
+          renderDriverFromLive();renderRiderFromLive();
+        }
+      }
+    );
+    setLiveStatus('🟢 Gerçek zamanlı bağlantı aktif',true);
+    await refreshCloudRide();
+  }catch(e){
+    console.warn('Appwrite Realtime bağlantısı kurulamadı:',e);
+    setLiveStatus('⚠️ Gerçek zamanlı bağlantı kurulamadı. Demo bağlantısı açık.');
+  }
+}
+async function refreshCloudRide(){
+  if(!tablesDB||!user)return;
+  try{
+    const rows=await tablesDB.listRows({databaseId:DB_ID,tableId:RIDE_TABLE_ID,queries:[Appwrite.Query.orderDesc('createdAt')],total:false});
+    const mine=(rows.rows||[]).find(r=>r.riderId===user.$id && ['requested','accepted','started'].includes(r.status));
+    const pending=(rows.rows||[]).find(r=>r.status==='requested');
+    const chosen=driverOnline?pending:mine;
+    if(chosen){liveRide={...chosen,rowId:chosen.$id};localStorage.setItem(RIDE_KEY,JSON.stringify(liveRide));}
+    else if(!liveRide){localStorage.removeItem(RIDE_KEY)}
+    renderDriverFromLive();renderRiderFromLive();
+  }catch(e){console.warn('Cloud ride okunamadı:',e)}
+}
+async function createCloudRide(r){
+  if(!tablesDB||!user)return null;
+  const row=await tablesDB.createRow({
+    databaseId:DB_ID,tableId:RIDE_TABLE_ID,rowId:Appwrite.ID.unique(),
+    data:{status:r.status,riderId:user.$id,dest:r.dest||'',eta:r.eta||'',fare:r.fare||'',createdAt:r.createdAt||new Date().toISOString(),driverId:'',acceptedAt:'',startedAt:'',completedAt:'',driverLat:0,driverLng:0,driverUpdatedAt:''},
+    permissions:[
+      Appwrite.Permission.read(Appwrite.Role.users()),
+      Appwrite.Permission.update(Appwrite.Role.users()),
+      Appwrite.Permission.delete(Appwrite.Role.user(user.$id))
+    ]
+  });
+  return {...r,$id:row.$id,rowId:row.$id,riderId:user.$id};
+}
+async function updateCloudRide(r){
+  if(!tablesDB||!r||!r.rowId)return;
+  const data={
+    status:r.status||'',riderId:r.riderId||'',driverId:r.driverId||'',dest:r.dest||'',eta:r.eta||'',fare:r.fare||'',
+    createdAt:r.createdAt||'',acceptedAt:r.acceptedAt||'',startedAt:r.startedAt||'',completedAt:r.completedAt||'',driverLat:Number(r.driverLat||0),driverLng:Number(r.driverLng||0),driverUpdatedAt:r.driverUpdatedAt||''
+  };
+  try{await tablesDB.updateRow({databaseId:DB_ID,tableId:RIDE_TABLE_ID,rowId:r.rowId,data})}
+  catch(e){console.warn('Cloud ride güncellenemedi:',e)}
+}
+function syncCallButton(){const r=getLiveRide(); const busy=r && ['accepted','started'].includes(r.status); if($('call')) $('call').disabled=!!busy || !target;}
+function haversineKm(aLat,aLng,bLat,bLng){
+ if(!aLat||!aLng||!bLat||!bLng)return null;
+ const R=6371,rad=Math.PI/180,dLat=(bLat-aLat)*rad,dLng=(bLng-aLng)*rad;
+ const x=Math.sin(dLat/2)**2+Math.cos(aLat*rad)*Math.cos(bLat*rad)*Math.sin(dLng/2)**2;
+ return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+function renderDriverLocation(r){
+ const lat=Number(r&&r.driverLat),lng=Number(r&&r.driverLng);
+ if(lat&&lng){
+   $('driverLocationStatus').textContent='📍 Konum aktif · '+lat.toFixed(5)+', '+lng.toFixed(5);
+ }else $('driverLocationStatus').textContent='📍 Sürücü konumu bekleniyor…';
+}
+function renderRiderDriverLocation(r){
+ const lat=Number(r&&r.driverLat),lng=Number(r&&r.driverLng);
+ if(!lat||!lng)return;
+ if(driverMarker)map.removeLayer(driverMarker);
+ driverMarker=L.marker([lat,lng]).addTo(map).bindPopup('🏍️ Birmotor sürücüsü');
+ if(userPos){
+   const km=haversineKm(userPos[0],userPos[1],lat,lng);
+   if(km!==null){
+     $('status').textContent='🏍️ Sürücü '+(km<1?(Math.round(km*1000)+' m'):(km.toFixed(1)+' km'))+' uzakta';
+   }
+ }
+}
+async function publishDriverLocation(lat,lng){
+ if(!user||!tablesDB)return;
+ const r=getLiveRide();
+ if(!r||!['requested','accepted','started'].includes(r.status))return;
+ r.driverLat=Number(lat.toFixed(6));r.driverLng=Number(lng.toFixed(6));r.driverUpdatedAt=new Date().toISOString();
+ liveRide=r;localStorage.setItem(RIDE_KEY,JSON.stringify(r));
+ await updateCloudRide(r);
+ renderDriverLocation(r);renderRiderDriverLocation(r);
+}
+function stopDriverLocation(){
+ if(driverWatchId!==null && navigator.geolocation){navigator.geolocation.clearWatch(driverWatchId);driverWatchId=null;}
+ if(driverLocationTimer){clearInterval(driverLocationTimer);driverLocationTimer=null;}
+}
+function startDriverLocation(){
+ stopDriverLocation();
+ if(!navigator.geolocation){$('driverLocationStatus').textContent='⚠️ Bu cihaz konum desteği vermiyor.';return;}
+ $('driverLocationStatus').textContent='📍 Konum alınıyor…';
+ driverWatchId=navigator.geolocation.watchPosition(pos=>{
+   publishDriverLocation(pos.coords.latitude,pos.coords.longitude);
+ },()=>{$('driverLocationStatus').textContent='⚠️ Konum izni gerekli.'},{enableHighAccuracy:true,maximumAge:3000,timeout:10000});
+ driverLocationTimer=setInterval(()=>{
+   navigator.geolocation.getCurrentPosition(pos=>publishDriverLocation(pos.coords.latitude,pos.coords.longitude),()=>{}, {enableHighAccuracy:true,maximumAge:3000,timeout:10000});
+ },5000);
+}
+function renderDriverFromLive(){
+ const r=getLiveRide();
+ renderDriverLocation(r);
+ syncCallButton();
+ if(!driverOnline){
+   $('driverRequest').style.display='none';
+   $('driverTrip').style.display='none';
+   return;
+ }
+ if(!r){
+   $('driverRequest').style.display='none';
+   $('driverTrip').style.display='none';
+   $('driverEmpty').textContent='Yolcu tarafından yeni istek bekleniyor.';
+   $('driverEmpty').style.display='block';
+   return;
+ }
+ if(r.status==='requested'){
+   $('driverRequest').style.display='block';
+   $('driverTrip').style.display='none';
+   $('driverEmpty').style.display='none';
+   $('driverState').textContent='Müsait';
+   $('driverToggleBtn').disabled=false;
+   $('driverToggleBtn').textContent='Müsaitliği Kapat';
+   const text=$('driverRequest').querySelector('.driver-request-text');
+   if(text) text.innerHTML='📍 '+(r.dest||'Hedef')+'<br><span class="muted">Tahmini '+(r.eta||'—')+' · '+(r.fare||'—')+'</span>';
+ }else if(r.status==='accepted' || r.status==='started'){
+   $('driverRequest').style.display='none';
+   $('driverTrip').style.display='block';
+   $('driverEmpty').style.display='none';
+   $('driverState').textContent=r.status==='started'?'Yolculukta':'Yolcuya gidiliyor';
+   $('driverToggleBtn').disabled=true;
+   $('driverToggleBtn').textContent='Yolculukta';
+ }else if(r.status==='completed'){
+   $('driverRequest').style.display='none';
+   $('driverTrip').style.display='none';
+   $('driverState').textContent='Müsait';
+   $('driverToggleBtn').disabled=false;
+   $('driverToggleBtn').textContent='Müsaitliği Kapat';
+   $('driverEmpty').textContent='Yolculuk tamamlandı. Yeni istekler bekleniyor.';
+   $('driverEmpty').style.display='block';
+ }
+}
+function renderRiderFromLive(){
+ const r=getLiveRide();
+ renderRiderDriverLocation(r);
+ syncCallButton();
+ if(!r || !['requested','accepted','started','completed'].includes(r.status)) return;
+ if(r.status==='requested'){
+   if($('modal').classList.contains('show')){
+     $('mtitle').textContent='Sürücü aranıyor';
+     $('msub').textContent='Yakındaki sürücüler kontrol ediliyor.';
+     $('status').textContent='● Sürücüler aranıyor…';
+   }
+ }else if(r.status==='accepted'){
+   if($('modal').classList.contains('show')){
+     step=1;
+     $('mtitle').textContent='Sürücü bulundu';
+     $('msub').textContent='Sürücü yolculuk isteğinizi kabul etti.';
+     $('status').textContent='🏍️ Sürücü bulundu · '+(r.fare||curFare);
+     $('advanceBtn').textContent='Yolculuğu Başlat';
+   }
+ }else if(r.status==='started'){
+   if($('modal').classList.contains('show')){
+     step=3;
+     $('mtitle').textContent='Yolculuk başladı';
+     $('msub').textContent=(r.dest||curDest)+' yönüne gidiyorsunuz.';
+     $('status').textContent='🏍️ Yolculuk devam ediyor · '+(r.fare||curFare);
+     $('advanceBtn').textContent='Yolculuğu Tamamla';
+   }
+ }else if(r.status==='completed'){
+   if($('modal').classList.contains('show')){
+     step=4;
+     $('mtitle').textContent='Yolculuk tamamlandı';
+     $('msub').textContent='Birmotor yolculuğunuz tamamlandı.';
+     $('status').textContent='⭐ Yolculuk kaydedildi · '+(r.fare||curFare);
+     $('advanceBtn').textContent='Puanla';
+   }
+ }
+}
+window.addEventListener('storage',e=>{if(e.key===RIDE_KEY){renderDriverFromLive();renderRiderFromLive()}});
+window.addEventListener('bmRideChanged',()=>{renderDriverFromLive();renderRiderFromLive()});
+setInterval(()=>{renderDriverFromLive();renderRiderFromLive()},800);
+
+let driverOnline=false;
+function toggleDriver(){
+ driverOnline=!driverOnline;
+ $('driverState').textContent=driverOnline?'Müsait':'Müsait değil';
+ $('driverToggleBtn').textContent=driverOnline?'Müsaitliği Kapat':'Müsait Ol';
+ if(driverOnline){
+   startDriverLocation();
+   renderDriverFromLive();
+   refreshCloudRide();
+ }else{
+   stopDriverLocation();
+   $('driverRequest').style.display='none';
+   $('driverTrip').style.display='none';
+   $('driverEmpty').textContent='Müsait değil. Yeni istekler gösterilmeyecek.';
+   $('driverEmpty').style.display='block';
+ }
+}
+async function acceptRide(){
+ const r=getLiveRide();
+ if(!r || r.status!=='requested'){
+   alert('Önce yolcu tarafından bir Motor Çağır isteği oluşturulmalı.');
+   return;
+ }
+ driverOnline=true;
+ startDriverLocation();
+ r.status='accepted';
+ r.driver='Birmotor sürücüsü';
+ r.driverId=user?user.$id:'';
+ r.acceptedAt=new Date().toISOString();
+ r.driverState='accepted';
+ setLiveRide(r);
+ await updateCloudRide(r);
+ $('driverRequest').style.display='none';
+ $('driverTrip').style.display='block';
+ $('driverEmpty').style.display='none';
+ $('driverState').textContent='Yolcuya gidiliyor';
+ $('driverToggleBtn').disabled=true;
+ $('driverToggleBtn').textContent='Yolculukta';
+}
+async function rejectRide(){
+ const r=getLiveRide();
+ if(r && r.status==='requested'){
+   r.status='rejected';
+   setLiveRide(r);
+   await updateCloudRide(r);
+ }
+ $('driverRequest').style.display='none';
+ $('driverTrip').style.display='none';
+ $('driverEmpty').textContent='İstek reddedildi. Yeni istekler bekleniyor.';
+ $('driverEmpty').style.display='block';
+}
+async function finishDriverRide(){
+ const r=getLiveRide();
+ if(!r || !['accepted','started'].includes(r.status)){
+   return;
+ }
+ r.status='completed';
+ stopDriverLocation();
+ r.completedAt=new Date().toISOString();
+ r.driverState='completed';
+ setLiveRide(r);
+ await updateCloudRide(r);
+ $('driverTrip').style.display='none';
+ $('driverState').textContent='Müsait';
+ $('driverToggleBtn').disabled=false;
+ $('driverToggleBtn').textContent='Müsaitliği Kapat';
+ $('driverEmpty').textContent='Yolculuk tamamlandı. Yeni istekler bekleniyor.';
+ $('driverEmpty').style.display='block';
+ syncCallButton();
+ setTimeout(()=>openDriverRating(),200);
+}
+
+function openDriverRating(){
+  if(driverRatingShown)return;
+  driverRatingShown=true;
+  driverRating=0;
+  $('driverRatingModal').classList.add('show');
+  setDriverRating(0);
+  $('driverRatingComment').value='';
+  $('driverRatingStatus').textContent='';
+}
+function closeDriverRating(){
+  $('driverRatingModal').classList.remove('show');
+  driverRatingShown=false;
+}
+function setDriverRating(n){
+  driverRating=n;
+  [...$('driverRatingStars').querySelectorAll('.star')].forEach((b,i)=>b.classList.toggle('on',i<n));
+}
+function submitDriverRating(){
+  if(!driverRating){
+    $('driverRatingStatus').textContent='Lütfen 1–5 yıldız arasında bir puan seç.';
+    return;
+  }
+  let a=[];
+  try{a=JSON.parse(localStorage.getItem('bmRatings')||'[]')}catch(e){}
+  a.unshift({
+    rating:driverRating,
+    comment:$('driverRatingComment').value.trim(),
+    role:'driver_to_passenger',
+    passenger:'Yolcu',
+    fare:(getLiveRide()&&getLiveRide().fare)||curFare,
+    t:new Date().toLocaleString('tr-TR')
+  });
+  localStorage.setItem('bmRatings',JSON.stringify(a.slice(0,20)));
+  $('driverRatingStatus').textContent='✓ Yolcu puanı kaydedildi.';
+  setTimeout(closeDriverRating,700);
+}
+
+const bellAudio=new Audio('data:audio/wav;base64,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AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==');
+bellAudio.preload='auto';
+bellAudio.volume=1.0;
+function unlockBell(){
+  try{
+    bellEnabled=true;
+    $('bellBtn').textContent='🔔 Ses Açık';
+    $('bellBtn').classList.add('on');
+    bellAudio.currentTime=0;
+    const p=bellAudio.play();
+    if(p&&p.catch)p.catch(()=>{});
+    const A=window.AudioContext||window.webkitAudioContext;
+    if(A){
+      if(!audioCtx)audioCtx=new A();
+      if(audioCtx.state==='suspended')audioCtx.resume();
+    }
+  }catch(e){}
+}
+function bellTone(){
+  if(!bellEnabled)return;
+  try{
+    bellAudio.currentTime=0;
+    const p=bellAudio.play();
+    if(p&&p.catch)p.catch(()=>{});
+  }catch(e){}
+}
+function driverHasNewRequest(){
+  const p=$('driver'),s=$('driverState'),r=$('driverRequest');
+  if(!p||!s||!r)return false;
+  const visible=getComputedStyle(p).display!=='none';
+  const available=/Müsait/.test(s.textContent||'')&&!/değil/.test(s.textContent||'');
+  return visible&&available&&getComputedStyle(r).display!=='none';
+}
+function updateBell(){
+  const active=driverHasNewRequest();
+  if(active){
+    $('bellNotice').classList.add('show');
+    if(bellEnabled&&!bellTimer){
+      bellTone();
+      bellTimer=setInterval(bellTone,1800);
+      if(navigator.vibrate)navigator.vibrate([180,100,180]);
+    }
+  }else{
+    $('bellNotice').classList.remove('show');
+    if(bellTimer){clearInterval(bellTimer);bellTimer=null}
+  }
+}
+$('bellBtn').addEventListener('click',unlockBell);
+setInterval(updateBell,500);
+
+renderDriverFromLive();renderRiderFromLive();
+if(user)refreshCloudRide();
+</script></body></html>
