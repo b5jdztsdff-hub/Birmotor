@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101828">
+<title>Birmotor</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eef1f4;color:#101828;font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif}
+.app{max-width:520px;margin:auto;min-height:100vh;background:#fff}.head{height:64px;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #eee}
+.logo{font-size:25px;font-weight:850}.logo span{color:#16a34a}.avatar{border:0;background:#101828;color:#fff;width:40px;height:40px;border-radius:50%;font-weight:700}
+#map{height:45vh;min-height:320px}.loc{position:absolute;right:16px;top:14px;z-index:5;border:0;border-radius:50%;background:#fff;width:44px;height:44px;font-size:21px}
+.sheet{padding:18px 16px 26px;border-radius:24px 24px 0 0;margin-top:-18px;background:#fff;position:relative;z-index:3;box-shadow:0 -5px 20px #0001}
+.field,.info{border:1px solid #e4e7ec;border-radius:14px;padding:12px;margin-bottom:10px}.field{display:flex;gap:10px;align-items:center}.dot{width:10px;height:10px;border-radius:50%;background:#12b76a}.sq{width:10px;height:10px;background:#101828;border-radius:2px}
+small{color:#667085}.search{display:flex;gap:8px}.search input,.input{flex:1;border:1px solid #e4e7ec;border-radius:12px;padding:12px;font-size:15px}.search button,.main{border:0;border-radius:12px;background:#101828;color:#fff;font-weight:700}.search button{padding:0 15px}
+.result{padding:10px;border-bottom:1px solid #eee;font-size:14px}.row{display:flex;gap:10px}.info{flex:1;background:#f8f9fb}.info b{display:block;margin-top:4px}.main{width:100%;padding:16px;font-size:17px}.main:disabled{opacity:.45}
+nav{display:flex;justify-content:space-around;border-top:1px solid #eee;padding:12px 6px 18px;position:sticky;bottom:0;background:#fff}nav button{border:0;background:none;color:#667085}nav .on{color:#101828;font-weight:700}
+.view{padding:18px 16px 30px}.item{border:1px solid #eaecf0;border-radius:14px;padding:13px;margin:9px 0}.muted{color:#667085;font-size:13px}
+.modal{display:none;position:fixed;inset:0;background:#0007;z-index:20;align-items:flex-end}.modal.show{display:flex}.card{width:min(520px,100%);margin:auto;background:#fff;border-radius:24px 24px 0 0;padding:22px 18px 30px}.pic{width:52px;height:52px;border-radius:50%;background:#101828;color:#fff;display:grid;place-items:center;font-weight:700}.driver{display:flex;gap:12px;align-items:center;padding:14px 0}.status{padding:11px;border-radius:11px;background:#ecfdf3;color:#067647;margin:10px 0}.secondary{background:#f2f4f7;color:#101828;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="head"><div class="logo">Bir<span>motor</span></div><button class="avatar" id="topAvatar" onclick="show('profile')">Ş</button></header>
+
+<div id="home">
+<div style="position:relative"><div id="map"></div><button class="loc" onclick="locate()">⌖</button></div>
+<section class="sheet">
+<div class="field"><span class="dot"></span><div><small>Alınacak konum</small><strong id="pickup">Konum alınmadı</strong></div></div>
+<div class="search"><input id="q" placeholder="Nereye gideceksin?"><button onclick="searchAddress()">Ara</button></div>
+<div id="results"></div>
+<div class="field"><span class="sq"></span><div><small>Hedef</small><strong id="dest">Hedef adres seç</strong></div></div>
+<div class="row"><div class="info"><small>Tahmini süre</small><b id="eta">—</b></div><div class="info"><small>Tahmini ücret</small><b id="fare">—</b></div></div>
+<button id="call" class="main" disabled onclick="callMotor()">🏍️ Motor Çağır</button>
+</section>
+</div>
+
+<div id="history" class="view" style="display:none"><h2>Yolculuklarım</h2><p class="muted">Tamamlanan yolculukların burada görünür.</p><div id="historyList"></div></div>
+
+<div id="profile" class="view" style="display:none"><h2>Profil</h2>
+<div class="field"><div class="pic" id="pAvatar">Ş</div><div><b id="pName">Şükrü</b><div class="muted" id="pPhone">Telefon eklenmedi</div></div></div>
+<small>Ad Soyad</small><input class="input" id="name" placeholder="Ad Soyad">
+<small>Telefon</small><input class="input" id="phone" placeholder="05xx xxx xx xx" inputmode="tel">
+<button class="main" onclick="saveProfile()">Profili Kaydet</button>
+<p class="muted">Bu sürümde profil bilgileri yalnızca bu telefondaki tarayıcıda saklanır. Gerçek hesap sistemi sonraki aşamada eklenecek.</p>
+</div>
+
+<nav><button id="nHome" class="on" onclick="show('home')">⌂<br>Harita</button><button id="nHistory" onclick="show('history')">◷<br>Geçmiş</button><button id="nProfile" onclick="show('profile')">◎<br>Profil</button></nav>
+</div>
+
+<div class="modal" id="modal"><div class="card">
+<h2 id="mtitle">Sürücü aranıyor</h2><p id="msub">Yakındaki sürücüler kontrol ediliyor.</p>
+<div class="driver"><div class="pic">M</div><div><b>Mehmet K.</b><br><small>⭐ 4.9 · 2 dk uzakta · Siyah motor</small></div></div>
+<div class="status" id="status">● Sürücü bulunuyor…</div>
+<button class="main" onclick="advance()">Devam</button><button class="main secondary" onclick="closeModal()">İptal</button>
+</div></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+let map=L.map('map',{zoomControl:false}).setView([41.02,29.18],13),userPos=null,target=null,step=0,curDest='—',curFare='—',marker,routeLine;
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+function $(x){return document.getElementById(x)}
+function setUser(a,b){userPos=[a,b];if(marker)map.removeLayer(marker);marker=L.marker(userPos).addTo(map);map.setView(userPos,15);$('pickup').textContent='Mevcut konum'}
+function locate(){navigator.geolocation?navigator.geolocation.getCurrentPosition(p=>setUser(p.coords.latitude,p.coords.longitude),()=>alert('Konum izni verilmedi.')):alert('Konum desteklenmiyor.')}
+locate();
+async function searchAddress(){
+ let q=$('q').value.trim();if(!q)return;$('results').innerHTML='<div class="result">Adres aranıyor…</div>';
+ try{let r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=tr&q='+encodeURIComponent(q)),d=await r.json();$('results').innerHTML=d.length?d.map((x,i)=>'<div class="result" onclick="pick('+i+')">'+x.display_name+'</div>').join(''):'<div class="result">Adres bulunamadı.</div>';window._results=d}catch(e){$('results').innerHTML='<div class="result">Arama kullanılamıyor.</div>'}
+}
+async function pick(i){
+ let x=window._results[i],a=+x.lat,b=+x.lon;target=[a,b];curDest=x.display_name.split(',').slice(0,2).join(',');$('dest').textContent=curDest;$('results').innerHTML='';$('q').value='';
+ if(!userPos){alert('Önce mevcut konumunuzu seçin.');return}
+ if(routeLine)map.removeLayer(routeLine);
+ try{let s=userPos[1]+','+userPos[0],e=b+','+a,r=await fetch('https://router.project-osrm.org/route/v1/driving/'+s+';'+e+'?overview=full&geometries=geojson'),d=await r.json(),rt=d.routes[0],km=rt.distance/1000,min=Math.max(1,Math.round(rt.duration/60)),fare=Math.max(45,Math.round(45+km*12));routeLine=L.geoJSON(rt.geometry,{style:{weight:5,opacity:.85}}).addTo(map);map.fitBounds(routeLine.getBounds(),{padding:[35,35]});$('eta').textContent=min+' dk';curFare='₺'+fare;$('fare').textContent=curFare;$('call').disabled=false}catch(e){alert('Rota hesaplanamadı.')}}
+function callMotor(){$('modal').classList.add('show');step=0}
+function advance(){step++;if(step==1){$('mtitle').textContent='Sürücü bulundu';$('msub').textContent='Mehmet K. konumunuza geliyor.';$('status').textContent='🏍️ Yaklaşık 2 dakika'}else if(step==2){$('mtitle').textContent='Yolculuk başladı';$('msub').textContent='Güvenli yolculuklar!';$('status').textContent='● Yolculuk devam ediyor'}else{saveTrip();$('mtitle').textContent='Yolculuk tamamlandı';$('msub').textContent='Demo yolculuk tamamlandı.';$('status').textContent='⭐ Puanlama ekranı hazır'}}
+function closeModal(){$('modal').classList.remove('show')}
+function show(v){['home','history','profile'].forEach(x=>$(x).style.display=x==v?'block':'none');['nHome','nHistory','nProfile'].forEach(x=>$(x).classList.remove('on'));$('n'+v[0].toUpperCase()+v.slice(1)).classList.add('on');if(v=='history')renderHistory();if(v=='profile')loadProfile();if(v=='home')setTimeout(()=>map.invalidateSize(),100)}
+function saveTrip(){let a=JSON.parse(localStorage.getItem('bmTrips')||'[]');a.unshift({d:curDest,f:curFare,t:new Date().toLocaleString('tr-TR')});localStorage.setItem('bmTrips',JSON.stringify(a.slice(0,20)))}
+function renderHistory(){let a=JSON.parse(localStorage.getItem('bmTrips')||'[]');$('historyList').innerHTML=a.length?a.map(x=>'<div class="item"><b>🏍️ '+x.d+'</b><div class="muted">'+x.t+'</div><b style="margin-top:5px;display:block">'+x.f+'</b></div>').join(''):'<div class="muted">Henüz tamamlanan yolculuk yok.</div>'}
+function loadProfile(){let p=JSON.parse(localStorage.getItem('bmProfile')||'{}'),n=p.n||'Şükrü',ph=p.p||'Telefon eklenmedi';$('pName').textContent=n;$('pPhone').textContent=ph;$('name').value=p.n||'';$('phone').value=p.p||'';let i=n.trim()[0]||'Ş';$('pAvatar').textContent=i;$('topAvatar').textContent=i}
+function saveProfile(){localStorage.setItem('bmProfile',JSON.stringify({n:$('name').value.trim()||'Şükrü',p:$('phone').value.trim()}));loadProfile();alert('Profil kaydedildi.')}
+loadProfile();
+</script>
+</body>
+</html>
