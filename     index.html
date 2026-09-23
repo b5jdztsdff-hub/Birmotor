@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111111">
+<title>Birmotor</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#111;color:#111}
+.app{max-width:430px;min-height:100vh;margin:auto;background:#f7f7f7;position:relative;overflow:hidden}
+.hero{height:310px;background:linear-gradient(160deg,#161616,#2a2a2a);color:#fff;padding:52px 22px 20px;position:relative}
+.logo{font-size:28px;font-weight:900;letter-spacing:.5px}.logo span{color:#ffc400}
+.tag{margin-top:6px;color:#ddd}.bike{position:absolute;right:18px;bottom:8px;font-size:88px;filter:drop-shadow(0 8px 8px #000)}
+.card{margin:-45px 16px 0;background:white;border-radius:22px;padding:8px 16px 16px;position:relative;box-shadow:0 8px 30px #0002}
+.row{display:flex;gap:12px;padding:15px 2px;border-bottom:1px solid #eee;align-items:center}.row:last-of-type{border:0}
+.icon{width:28px;font-size:21px;text-align:center}.label{font-size:12px;color:#777}.value{font-size:15px;margin-top:3px}
+.btn{width:100%;border:0;border-radius:14px;padding:16px;background:#ffc400;font-size:16px;font-weight:800;cursor:pointer}
+.status{display:none;margin-top:14px;padding:14px;border-radius:14px;background:#fff8d9;text-align:center}
+.bottom{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:430px;width:100%;height:72px;background:#fff;border-top:1px solid #eee;display:flex;justify-content:space-around;align-items:center}
+.nav{font-size:11px;color:#777;text-align:center}.nav.active{color:#111;font-weight:800}.nav b{display:block;font-size:21px;margin-bottom:3px}
+.screen{padding-bottom:90px}.small{font-size:12px;color:#777;text-align:center;margin:14px}
+</style>
+</head>
+<body>
+<div class="app">
+  <main class="screen">
+    <section class="hero">
+      <div class="logo"><span>BIR</span>MOTOR</div>
+      <div class="tag">Yakınındaki motoru bul.</div>
+      <div class="bike">🏍️</div>
+    </section>
+
+    <section class="card">
+      <div class="row">
+        <div class="icon">📍</div>
+        <div><div class="label">Neredesin?</div><div class="value" id="location">Mevcut konum</div></div>
+      </div>
+      <div class="row">
+        <div class="icon">🏁</div>
+        <div style="flex:1"><div class="label">Nereye gideceksin?</div>
+          <input id="destination" placeholder="Varış noktanı yaz" style="border:0;outline:0;font-size:15px;width:100%;padding:3px 0">
+        </div>
+      </div>
+      <button class="btn" onclick="callMotor()">🏍️ MOTOR ÇAĞIR</button>
+      <div class="status" id="status">Yakındaki sürücüler aranıyor…</div>
+    </section>
+    <p class="small">Bu ilk prototiptir. Gerçek sürücü, ödeme ve harita bağlantıları sonraki aşamada eklenecek.</p>
+  </main>
+
+  <nav class="bottom">
+    <div class="nav active"><b>⌂</b>Ana Sayfa</div>
+    <div class="nav"><b>🗺</b>Yolculuklar</div>
+    <div class="nav"><b>💬</b>Mesajlar</div>
+    <div class="nav"><b>♙</b>Profil</div>
+  </nav>
+</div>
+<script>
+function callMotor(){
+  const d=document.getElementById('destination').value.trim();
+  const s=document.getElementById('status');
+  if(!d){s.style.display='block';s.textContent='Önce varış noktanı yaz.';return;}
+  s.style.display='block';
+  s.textContent='Yakındaki sürücüler aranıyor…';
+  setTimeout(()=>s.textContent='Demo: Yakında bir sürücü bulundu. Gerçek eşleştirme sonraki aşamada.',1200);
+}
+</script>
+</body>
+</html>
