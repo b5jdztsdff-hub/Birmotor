@@ -67,7 +67,9 @@ function useLocation(){
  navigator.geolocation.getCurrentPosition(p=>setUser(p.coords.latitude,p.coords.longitude),()=>alert('Konum izni verilmedi veya konum alınamadı.'),{enableHighAccuracy:true,timeout:10000});
 }
 useLocation();
-
+map.on('click',e=>{
+  setUser(e.latlng.lat,e.latlng.lng);
+});
 async function searchAddress(){
  const q=$('search').value.trim(); if(!q)return;
  $('results').innerHTML='<div class="result">Adres aranıyor…</div>';
