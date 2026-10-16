@@ -1,0 +1,60 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JetMotor</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101116;color:white;font-family:Arial,sans-serif;padding:22px}
+main{max-width:480px;margin:auto}
+header{padding:25px 0}
+.logo{font-size:34px;font-weight:900;color:#ff3b30}
+.logo span{color:white}
+.tag{color:#bbb;margin-top:8px}
+.card{background:#1d1f27;border:1px solid #343640;border-radius:18px;padding:20px;margin:18px 0}
+h2{font-size:22px;margin-top:0}
+label{display:block;margin:17px 0 8px;color:#ddd}
+input,select{width:100%;padding:15px;border-radius:10px;border:1px solid #444650;background:#111319;color:white;font-size:16px}
+button{width:100%;padding:17px;background:#ff3b30;color:white;border:0;border-radius:12px;font-size:17px;font-weight:bold;margin-top:22px}
+.note{color:#bbb;font-size:13px;line-height:1.5}
+</style>
+</head>
+<body>
+<main>
+<header>
+<div class="logo">JET<span>MOTOR</span></div>
+<div class="tag">Çağır, yola çık! 🏍️</div>
+</header>
+<section class="card">
+<h2>Nereye gitmek istiyorsun?</h2>
+<form id="ride">
+<label for="from">Nereden alınacaksın?</label>
+<input id="from" required placeholder="Örn. Kadıköy, İstanbul">
+<label for="to">Nereye gideceksin?</label>
+<input id="to" required placeholder="Örn. Taksim, İstanbul">
+<label for="payment">Ödeme tercihi</label>
+<select id="payment">
+<option value="nakit">Nakit</option>
+<option value="havale">Havale / EFT</option>
+</select>
+<button type="submit">🏍️ Yolculuk iste</button>
+<p id="message" class="note" role="status"></p>
+</form>
+</section>
+<section class="card">
+<h2>Güvenli yolculuk</h2>
+<p class="note">Yolculuktan önce sürücü bilgilerini ve güvenlik koşullarını kontrol et.</p>
+</section>
+<p class="note">JetMotor · Yolcu uygulaması</p>
+</main>
+<script>
+document.getElementById("ride").addEventListener("submit",function(e){
+e.preventDefault();
+document.getElementById("message").textContent=
+"Form hazır. Yolculuk isteğinin gönderilmesi için sunucu bağlantısı kurulmalıdır.";
+});
+</script>
+</body>
+</html>
