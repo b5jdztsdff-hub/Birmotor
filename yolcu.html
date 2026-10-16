@@ -9,3 +9,111 @@
 </div><script>
 document.getElementById('ride').addEventListener('submit',e=>{e.preventDefault();const r={from:document.getElementById('from').value,to:document.getElementById('to').value,payment:document.getElementById('payment').value,note:document.getElementById('note').value,time:new Date().toLocaleString('tr-TR')};localStorage.setItem('birmotor_demo_ride',JSON.stringify(r));const box=document.getElementById('result');box.style.display='block';box.innerHTML='<strong>Demo talebin hazır.</strong><br>'+r.from+' → '+r.to+'<br>Ödeme: '+r.payment+'<br><small>Bu yalnızca bu cihazdaki ön gösterimdir; sürücüye iletilmedi.</small>';});
 </script></body></html>
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JetMotor - Çağır, yola çık!</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#101116;color:#fff;padding:20px}
+.wrap{max-width:480px;margin:auto}
+header{padding:22px 0}
+.logo{font-size:32px;font-weight:900;color:#ff3b30}
+.logo span{color:#fff}
+.tag{color:#bbb;margin-top:7px}
+.card{background:#1c1e26;border:1px solid #30323c;border-radius:18px;padding:20px;margin:18px 0}
+h2{margin-top:0;font-size:22px}
+label{display:block;color:#ddd;font-size:14px;margin:15px 0 7px}
+input,select{width:100%;padding:15px;border-radius:10px;border:1px solid #424550;background:#111319;color:white;font-size:16px}
+button{width:100%;padding:16px;background:#ff3b30;color:white;border:0;border-radius:12px;font-size:17px;font-weight:bold;margin-top:20px}
+.note{font-size:13px;color:#b6b6bd;line-height:1.5}
+#message{margin-top:15px;line-height:1.5;overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="logo">JET<span>MOTOR</span></div>
+  <div class="tag">Çağır, yola çık! 🏍️</div>
+</header>
+
+<section class="card">
+  <h2>Nereye gitmek istiyorsun?</h2>
+  <form id="ride">
+    <label for="pickup">Nereden alınacaksın?</label>
+    <input id="pickup" required placeholder="Örn. Kadıköy, İstanbul">
+
+    <label for="destination">Nereye gideceksin?</label>
+    <input id="destination" required placeholder="Örn. Taksim, İstanbul">
+
+    <label for="payment">Ödeme tercihi</label>
+    <select id="payment" required>
+      <option value="nakit">Nakit</option>
+      <option value="havale">Banka havalesi / EFT</option>
+    </select>
+
+    <button id="submitBtn" type="submit">🏍️ Yolculuk iste</button>
+    <div id="message" role="status"></div>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Güvenli yolculuk</h2>
+  <p class="note">Yolculuk öncesinde sürücünün bilgilerini ve gerekli güvenlik koşullarını kontrol et. Bu ekran henüz sürücü doğrulaması veya acil durum hizmeti sağlamaz.</p>
+</section>
+
+<p class="note">JetMotor • Yolcu uygulaması</p>
+</div>
+
+<script>
+const SUPABASE_URL = "https://drhurbduectcemdsacch.supabase.co";
+const SUPABASE_KEY = "sb_publishable_qfItuQhQitQSUUpqi1UzXQ_MnJx4vI_";
+
+document.getElementById("ride").addEventListener("submit", async function(e) {
+  e.preventDefault();
+
+  const message = document.getElementById("message");
+  const button = document.getElementById("submitBtn");
+  button.disabled = true;
+  button.textContent = "Gönderiliyor...";
+  message.textContent = "";
+
+  const ride = {
+    pickup: document.getElementById("pickup").value.trim(),
+    destination: document.getElementById("destination").value.trim(),
+    payment_method: document.getElementById("payment").value,
+    status: "pending"
+  };
+
+  try {
+    const response = await fetch(SUPABASE_URL + "/rest/v1/rides", {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": "Bearer " + SUPABASE_KEY,
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal"
+      },
+      body: JSON.stringify(ride)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || "Kayıt başarısız oldu.");
+    }
+
+    message.textContent = "İstek kaydedildi. Sürücü uygulaması bağlantısını ayrıca test etmeliyiz.";
+    this.reset();
+  } catch (error) {
+    message.textContent = "İstek gönderilemedi. Supabase tablo sütunlarını ve izinlerini kontrol etmeliyiz. Ayrıntı: " + error.message;
+  } finally {
+    button.disabled = false;
+    button.textContent = "🏍️ Yolculuk iste";
+  }
+});
+</script>
+</body>
+</html>
