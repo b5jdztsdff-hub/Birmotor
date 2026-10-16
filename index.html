@@ -1,268 +1,88 @@
-<!doctype html><html lang="tr"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#101828"><title>Birmotor V16</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101820">
+<title>Birmotor — İstanbul</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#eef1f4;color:#101828;font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif}
-.app{max-width:520px;margin:auto;min-height:100vh;background:#fff}.head{height:64px;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #eee}
-.logo{font-size:25px;font-weight:850}.logo span{color:#16a34a}.avatar{border:0;background:#101828;color:#fff;width:40px;height:40px;border-radius:50%;font-weight:700}
-#map{height:45vh;min-height:320px}.loc{position:absolute;right:16px;top:14px;z-index:5;border:0;border-radius:50%;background:#fff;width:44px;height:44px;font-size:21px}
-.sheet{padding:18px 16px 26px;border-radius:24px 24px 0 0;margin-top:-18px;background:#fff;position:relative;z-index:3;box-shadow:0 -5px 20px #0001}
-.field,.info{border:1px solid #e4e7ec;border-radius:14px;padding:12px;margin-bottom:10px}.field{display:flex;gap:10px;align-items:center}
-.dot{width:10px;height:10px;border-radius:50%;background:#12b76a}.sq{width:10px;height:10px;background:#101828;border-radius:2px}small{color:#667085}
-.search{display:flex;gap:8px}.search input,.input{flex:1;border:1px solid #e4e7ec;border-radius:12px;padding:12px;font-size:15px}
-.search button,.main{border:0;border-radius:12px;background:#101828;color:#fff;font-weight:700}.search button{padding:0 15px}.result{padding:10px;border-bottom:1px solid #eee;font-size:14px}
-.row{display:flex;gap:10px}.info{flex:1;background:#f8f9fb}.info b{display:block;margin-top:4px}.main{width:100%;padding:16px;font-size:17px}.main:disabled{opacity:.45}
-nav{display:flex;justify-content:space-around;border-top:1px solid #eee;padding:12px 6px 18px;position:sticky;bottom:0;background:#fff;z-index:50}nav button{border:0;background:none;color:#667085}nav .on{color:#101828;font-weight:700}
-.view{padding:18px 16px 30px}.item{border:1px solid #eaecf0;border-radius:14px;padding:13px;margin:9px 0}.muted{color:#667085;font-size:13px}
-.formGroup{margin-bottom:14px}.formGroup label{display:block;color:#475467;font-size:14px;font-weight:700;margin:0 0 7px}.input{width:100%;display:block}
-.auth{border:1px solid #e4e7ec;border-radius:16px;padding:16px;background:#fafafa}.auth h3{margin:0 0 6px}.authActions{display:flex;gap:8px}.authActions button{flex:1}.secondary{background:#f2f4f7;color:#101828;margin-top:8px}
-.err{display:none;background:#fef3f2;color:#b42318;padding:10px;border-radius:10px;margin:10px 0;font-size:14px}.ok{background:#ecfdf3;color:#067647;padding:10px;border-radius:10px;margin:10px 0;font-size:14px}
-.modal{display:none;position:fixed;inset:0;background:#0007;z-index:20;align-items:flex-end}.modal.show{display:flex}.card{width:min(520px,100%);margin:auto;background:#fff;border-radius:24px 24px 0 0;padding:22px 18px 30px}
-.pic{width:52px;height:52px;border-radius:50%;background:#101828;color:#fff;display:grid;place-items:center;font-weight:700}.driver{display:flex;gap:12px;align-items:center;padding:14px 0}
-.status{padding:11px;border-radius:11px;background:#ecfdf3;color:#067647;margin:10px 0}
-</style></head><body><div class="app">
-<header class="head"><div class="logo">Bir<span>motor</span></div><button class="avatar" id="topAvatar" type="button" onclick="goTo('profile')" style="position:relative;z-index:1000;pointer-events:auto;touch-action:manipulation">Ş</button></header>
-<div id="home"><div style="position:relative"><div id="map"></div><button class="loc" onclick="locate()">⌖</button></div>
-<section class="sheet"><div class="field"><span class="dot"></span><div><small>Alınacak konum</small><strong id="pickup">Konum alınmadı</strong></div></div>
-<div class="search"><input id="q" placeholder="Nereye gideceksin?"><button onclick="searchAddress()">Ara</button></div><div id="results"></div>
-<div class="field"><span class="sq"></span><div><small>Hedef</small><strong id="dest">Hedef adres seç</strong></div></div>
-<div class="row"><div class="info"><small>Tahmini süre</small><b id="eta">—</b></div><div class="info"><small>Tahmini ücret</small><b id="fare">—</b></div></div>
-<button id="call" class="main" disabled onclick="callMotor()">🏍️ Motor Çağır</button><p class="muted" style="margin:10px 2px 0">Demo sürüş akışı: sürücü bul → onayla → başlat → tamamla.</p></section></div>
-<div id="history" class="view" style="display:none"><h2>Yolculuklarım</h2><p class="muted">Tamamlanan yolculukların burada görünür.</p><div id="historyList"></div></div>
-<div id="profile" class="view" style="display:none"><h2>Profil</h2>
-<div id="loggedOut" class="auth"><h3>Birmotor hesabın</h3><p class="muted">Gerçek hesabınla giriş yap veya yeni hesap oluştur.</p>
-<div class="formGroup"><label>Ad Soyad</label><input class="input" id="an" placeholder="Ad Soyad"></div>
-<div class="formGroup"><label>E-posta</label><input class="input" id="ae" type="email" placeholder="ornek@mail.com" autocomplete="email"></div>
-<div class="formGroup"><label>Şifre</label><input class="input" id="ap" type="password" placeholder="En az 8 karakter" autocomplete="current-password"></div>
-<div id="err" class="err"></div><div class="authActions"><button class="main" onclick="login()">Giriş Yap</button><button class="main" onclick="register()">Kayıt Ol</button></div>
+:root{--bg:#101820;--panel:#17232d;--panel2:#1e2c37;--yellow:#ffd43b;--white:#f7f9fb;--muted:#a9b6c2;--line:#30414e;--green:#65d6a0;--red:#ff8c8c}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--white);font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.app{max-width:480px;margin:0 auto;min-height:100dvh;padding-bottom:28px;background:linear-gradient(180deg,#101820,#111d26)}
+header{padding:calc(16px + env(safe-area-inset-top)) 20px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:22px;letter-spacing:.3px}.logo{width:38px;height:38px;border-radius:12px;background:var(--yellow);color:#101820;display:grid;place-items:center;font-size:23px}
+.pill{font-size:12px;color:var(--yellow);border:1px solid #746522;border-radius:99px;padding:6px 9px}
+main{padding:18px 16px}.intro h1{font-size:27px;line-height:1.1;margin:8px 0}.intro p{color:var(--muted);margin:8px 0 18px;font-size:14px;line-height:1.45}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#0b1218;padding:5px;border-radius:14px;margin-bottom:18px}
+.tabs button{border:0;border-radius:10px;padding:12px;background:transparent;color:var(--muted);font-weight:750;font-size:14px}
+.tabs button.active{background:var(--yellow);color:#111820}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;margin:12px 0}
+.card h2{font-size:17px;margin:0 0 13px}.field{margin:12px 0}.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:7px}
+input,select,textarea{width:100%;background:#0e171e;border:1px solid var(--line);border-radius:11px;padding:13px;color:var(--white);font:inherit;outline:none}
+input:focus,select:focus{border-color:var(--yellow)}.route{display:grid;grid-template-columns:22px 1fr;gap:9px;align-items:stretch}.dots{display:flex;flex-direction:column;align-items:center;padding-top:4px}.dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--yellow)}.line{width:2px;flex:1;min-height:20px;background:var(--line);margin:5px 0}.dest{width:10px;height:10px;background:var(--yellow);border-radius:2px}
+.btn{width:100%;border:0;border-radius:13px;padding:15px 14px;background:var(--yellow);color:#111820;font-weight:850;font-size:15px;margin-top:8px}.btn.secondary{background:var(--panel2);border:1px solid var(--line);color:var(--white)}.btn:active{transform:scale(.99)}
+.map{height:180px;border-radius:15px;position:relative;overflow:hidden;background:#20333d;border:1px solid #3b505c;margin-bottom:15px;background-image:linear-gradient(28deg,transparent 47%,#39515b 48%,#39515b 50%,transparent 51%),linear-gradient(115deg,transparent 43%,#39515b 44%,#39515b 46%,transparent 47%),linear-gradient(0deg,transparent 70%,#39515b 71%,#39515b 73%,transparent 74%)}
+.map:before{content:"";position:absolute;width:230px;height:230px;border:1px solid #45616c;border-radius:50%;left:28%;top:-45px}.map:after{content:"";position:absolute;width:140px;height:140px;border:1px solid #45616c;border-radius:50%;left:39%;top:0}
+.maplabel{position:absolute;z-index:2;left:12px;top:12px;background:#101820dc;padding:8px 10px;border-radius:9px;font-size:12px}.pin{position:absolute;z-index:3;left:52%;top:43%;background:var(--yellow);color:#111820;border-radius:50% 50% 50% 0;transform:rotate(-45deg);width:33px;height:33px;display:grid;place-items:center;font-weight:900}.pin span{transform:rotate(45deg)}
+.note{font-size:12px;line-height:1.45;color:var(--muted);margin:12px 2px}.hidden{display:none!important}.status{padding:11px 12px;border-radius:11px;background:#21372f;color:#a9f1cc;font-size:13px;margin-top:10px;line-height:1.4}
+.money{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}.money:last-child{border-bottom:0}.money strong{font-size:18px}.chips{display:flex;gap:8px;flex-wrap:wrap}.chip{border:1px solid var(--line);background:#0e171e;border-radius:99px;padding:8px 11px;font-size:12px;color:var(--muted)}
+footer{text-align:center;color:#72818d;font-size:11px;padding:10px 22px 24px}
+</style>
+</head>
+<body>
+<div class="app">
+<header><div class="brand"><div class="logo">🏍</div><span>BİRMOTOR</span></div><span class="pill">İSTANBUL</span></header>
+<main>
+<div class="intro"><h1>Şehrin içinde,<br><span style="color:var(--yellow)">motorunla devam et.</span></h1><p>İstanbul genelinde motosiklet yolculuğu için tasarlanan Birmotor prototipi.</p></div>
+<div class="tabs"><button id="passengerTab" class="active" onclick="switchMode('passenger')">Yolcu</button><button id="driverTab" onclick="switchMode('driver')">Sürücü</button></div>
+<section id="passenger">
+<div class="map"><div class="maplabel">📍 İstanbul · Harita önizlemesi</div><div class="pin"><span>🏍</span></div></div>
+<div class="card"><h2>Nereye gitmek istiyorsun?</h2>
+<div class="route"><div class="dots"><div class="dot"></div><div class="line"></div><div class="dest"></div></div><div>
+<div class="field"><label>ALINACAĞIN KONUM</label><input id="pickup" placeholder="Örn. Kadıköy, İstanbul"></div>
+<div class="field"><label>VARIŞ NOKTASI</label><input id="destination" placeholder="Örn. Beşiktaş, İstanbul"></div>
+</div></div>
+<div class="field"><label>ÖDEME YÖNTEMİ</label><select id="payment"><option>Nakit</option><option>Havale / EFT (sürücü IBAN'ına)</option></select></div>
+<button class="btn" onclick="requestRide()">🏍 Motor çağır</button><div id="rideStatus" class="status hidden"></div>
 </div>
-<div id="loggedIn" style="display:none"><div class="field"><div class="pic" id="pa">Ş</div><div><b id="pn">—</b><div class="muted" id="pe">—</div></div></div>
-<div class="formGroup"><label>Ad Soyad</label><input class="input" id="name"></div>
-<div class="formGroup"><label>Telefon</label><input class="input" id="phone" placeholder="05xx xxx xx xx" inputmode="tel"></div>
-<button class="main" id="saveProfileBtn" type="button">Profili Kaydet</button><div id="saveStatus" class="muted" style="margin-top:10px;min-height:24px"></div><button class="main secondary" onclick="logout()">Çıkış Yap</button>
-<p class="muted">E-posta ve telefon bilgileriniz Appwrite'da tutuluyor.</p></div></div>
-<nav><button type="button" id="nHome" class="on" onclick="goTo('home')">⌂<br>Harita</button><button type="button" id="nHistory" onclick="goTo('history')">◷<br>Geçmiş</button><button type="button" id="nProfile" onclick="goTo('profile')">◎<br>Profil</button></nav></div>
-<div class="modal" id="modal"><div class="card"><h2 id="mtitle">Sürücü aranıyor</h2><p id="msub">Yakındaki sürücüler kontrol ediliyor.</p><div class="driver"><div class="pic">M</div><div><b>Mehmet K.</b><br><small>⭐ 4.9 · 2 dk uzakta · Siyah motor · Plaka 34 BM 016</small></div></div><div class="status" id="status">● Sürücü bulunuyor…</div><button class="main" onclick="advance()">Devam</button><button class="main secondary" onclick="closeModal()">İptal</button></div></div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/appwrite@17.0.0"></script>
+<div class="card"><h2>Yolculuk nasıl işler?</h2><div class="chips"><span class="chip">1 · Konumunu seç</span><span class="chip">2 · Motor iste</span><span class="chip">3 · Sürücüyle eşleş</span></div><p class="note">Bu prototipte gerçek sürücü eşleştirmesi, canlı GPS ve ücret hesaplama bağlı değildir.</p></div>
+</section>
+<section id="driver" class="hidden">
+<div class="card"><h2>Sürücü başvurusu</h2><p class="note">Belgeleri tamamlayıp başvurunu ilet. Yönetici onayı gelmeden yolculuk kabulü açılmaz.</p>
+<div class="field"><label>AD SOYAD</label><input id="driverName" placeholder="Adın ve soyadın"></div>
+<div class="field"><label>TELEFON</label><input id="driverPhone" type="tel" placeholder="05xx xxx xx xx"></div>
+<div class="field"><label>MOTOSİKLET MARKA / MODEL</label><input id="bike" placeholder="Örn. Honda PCX"></div>
+<div class="field"><label>PLAKA</label><input id="plate" placeholder="34 ABC 123"></div>
+<div class="field"><label>IBAN</label><input id="iban" placeholder="TR00 0000 0000 0000 0000 0000 00"></div>
+<div class="field"><label>EHLİYET / ARAÇ BELGELERİ</label><input id="docs" type="file" accept="image/*,.pdf" multiple></div>
+<button class="btn" onclick="driverApply()">Başvuruyu hazırla</button><div id="driverStatus" class="status hidden"></div>
+</div>
+<div class="card"><h2>Sürücü paneli</h2><div class="money"><span>Hesap durumu</span><strong style="color:var(--yellow)">Onay bekliyor</strong></div><div class="money"><span>Gelen yolculuklar</span><strong>—</strong></div><div class="money"><span>Toplam kazanç</span><strong>₺0</strong></div><p class="note">Gerçek sürücü hesabı ve kazançlar için güvenli sunucu ve veritabanı kurulmalıdır.</p></div>
+</section>
+<div class="card"><h2>Güvenlik önce gelir</h2><p class="note">Gerçek yolculukları açmadan önce Türkiye ve İstanbul için geçerli izin ve taşıma kuralları doğrulanmalıdır. Bu demo gerçek bir ulaşım veya ödeme hizmeti sunmaz.</p></div>
+</main>
+<footer>Birmotor · İstanbul · Ön izleme sürümü</footer>
+</div>
 <script>
-const client=new Appwrite.Client().setEndpoint('https://fra.cloud.appwrite.io/v1').setProject('6ab3acf9003cbc22d2f3');
-const account=new Appwrite.Account(client);const tablesDB=Appwrite.TablesDB?new Appwrite.TablesDB(client):null;const DB_ID='6ab3b1cb000716abc746';const PROFILE_TABLE_ID='6ab3b214000c481e5201';let user=null;
-let map=L.map('map',{zoomControl:false}).setView([41.02,29.18],13),userPos=null,target=null,marker,driverMarker,routeLine,step=0,curDest='—',curFare='—',tripSaved=false;
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
-const $=x=>document.getElementById(x);
-function setUser(a,b){userPos=[a,b];if(marker)map.removeLayer(marker);marker=L.marker(userPos).addTo(map);map.setView(userPos,15);$('pickup').textContent='Mevcut konum'}
-function locate(){if(navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>setUser(p.coords.latitude,p.coords.longitude),()=>alert('Konum izni verilmedi.'));else alert('Konum desteklenmiyor.')}locate();
-async function searchAddress(){let q=$('q').value.trim();if(!q)return;$('results').innerHTML='<div class="result">Adres aranıyor…</div>';try{let r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=tr&q='+encodeURIComponent(q)),d=await r.json();window._results=d;$('results').innerHTML=d.length?d.map((x,i)=>'<div class="result" onclick="pick('+i+')">'+x.display_name+'</div>').join(''):'<div class="result">Adres bulunamadı.</div>'}catch(e){$('results').innerHTML='<div class="result">Arama kullanılamıyor.</div>'}}
-async function pick(i){let x=window._results[i],a=+x.lat,b=+x.lon;target=[a,b];curDest=x.display_name.split(',').slice(0,2).join(',');$('dest').textContent=curDest;$('results').innerHTML='';$('q').value='';if(!userPos){alert('Önce mevcut konumunuzu seçin.');return}if(routeLine)map.removeLayer(routeLine);try{let s=userPos[1]+','+userPos[0],e=b+','+a,r=await fetch('https://router.project-osrm.org/route/v1/driving/'+s+';'+e+'?overview=full&geometries=geojson'),d=await r.json(),rt=d.routes[0],km=rt.distance/1000,min=Math.max(1,Math.round(rt.duration/60)),fare=Math.max(45,Math.round(45+km*12));routeLine=L.geoJSON(rt.geometry,{style:{weight:5,opacity:.85}}).addTo(map);map.fitBounds(routeLine.getBounds(),{padding:[35,35]});$('eta').textContent=min+' dk';curFare='₺'+fare;$('fare').textContent=curFare;$('call').disabled=false}catch(e){alert('Rota hesaplanamadı.')}}
-function callMotor(){
-  if(!target){alert('Önce hedef adres seç.');return}
-  $('modal').classList.add('show');
-  step=0;tripSaved=false;
-  $('mtitle').textContent='Sürücü aranıyor';
-  $('msub').textContent='Yakındaki sürücüler kontrol ediliyor.';
-  $('status').textContent='● Sürücüler aranıyor…';
-  $('modal').querySelector('.main').textContent='Sürücüleri Göster';
-  if(driverMarker){map.removeLayer(driverMarker);driverMarker=null}
+function switchMode(mode){
+ const p=mode==='passenger';
+ document.getElementById('passenger').classList.toggle('hidden',!p);
+ document.getElementById('driver').classList.toggle('hidden',p);
+ document.getElementById('passengerTab').classList.toggle('active',p);
+ document.getElementById('driverTab').classList.toggle('active',!p);
 }
-function addDriverMarker(){
-  if(!userPos)return;
-  const dLat=userPos[0]+0.006,dLon=userPos[1]+0.008;
-  driverMarker=L.marker([dLat,dLon]).addTo(map).bindPopup('🏍️ Mehmet K. · 2 dk');
+function requestRide(){
+ const a=document.getElementById('pickup').value.trim(), b=document.getElementById('destination').value.trim();
+ const el=document.getElementById('rideStatus');el.classList.remove('hidden');
+ if(!a||!b){el.textContent='Devam etmek için alınacağın konumu ve varış noktasını yaz.';return;}
+ el.textContent='Talep önizlemesi hazır: '+a+' → '+b+'. Ödeme: '+document.getElementById('payment').value+'. Gerçek sürücüye gönderilmedi; canlı eşleştirme henüz bağlı değil.';
 }
-function advance(){
-  if(step===0){
-    step=1;
-    addDriverMarker();
-    $('mtitle').textContent='Sürücü bulundu';
-    $('msub').textContent='Mehmet K. size yaklaşık 2 dakika uzaklıkta.';
-    $('status').textContent='🏍️ Mehmet K. · ⭐ 4.9 · Siyah motor';
-    $('modal').querySelector('.main').textContent='Yolculuğu Onayla';
-  }else if(step===1){
-    step=2;
-    $('mtitle').textContent='Yolculuk onaylandı';
-    $('msub').textContent='Sürücü konumunuza geliyor.';
-    $('status').textContent='📍 Sürücü 2 dakika içinde burada';
-    $('modal').querySelector('.main').textContent='Yolculuğu Başlat';
-  }else if(step===2){
-    step=3;
-    $('mtitle').textContent='Yolculuk başladı';
-    $('msub').textContent=curDest+' yönüne gidiyorsunuz.';
-    $('status').textContent='🏍️ Yolculuk devam ediyor · '+curFare;
-    $('modal').querySelector('.main').textContent='Yolculuğu Tamamla';
-  }else if(step===3){
-    step=4;
-    if(!tripSaved){saveTrip();tripSaved=true;renderHistory()}
-    $('mtitle').textContent='Yolculuk tamamlandı';
-    $('msub').textContent='Birmotor yolculuğunuz tamamlandı.';
-    $('status').textContent='⭐ Yolculuk kaydedildi · '+curFare;
-    $('modal').querySelector('.main').textContent='Kapat';
-  }else{
-    closeModal();
-  }
+function driverApply(){
+ const name=document.getElementById('driverName').value.trim(), phone=document.getElementById('driverPhone').value.trim(), bike=document.getElementById('bike').value.trim(), plate=document.getElementById('plate').value.trim();
+ const el=document.getElementById('driverStatus');el.classList.remove('hidden');
+ if(!name||!phone||!bike||!plate){el.textContent='Başvuru önizlemesi için ad-soyad, telefon, motosiklet ve plaka alanlarını doldur.';return;}
+ const files=document.getElementById('docs').files.length;
+ el.textContent='Başvuru önizlemesi hazır. '+(files?'Seçilen belge sayısı: '+files+'. ':'Belge seçilmedi. ')+'Bu bilgiler sunucuya gönderilmedi ve kalıcı olarak kaydedilmedi.';
 }
-function closeModal(){$('modal').classList.remove('show')}
-function saveTrip(){let a=JSON.parse(localStorage.getItem('bmTrips')||'[]');a.unshift({d:curDest,f:curFare,t:new Date().toLocaleString('tr-TR')});localStorage.setItem('bmTrips',JSON.stringify(a.slice(0,20)))}
-function renderHistory(){let a=JSON.parse(localStorage.getItem('bmTrips')||'[]');$('historyList').innerHTML=a.length?a.map(x=>'<div class="item"><b>🏍️ '+x.d+'</b><div class="muted">'+x.t+'</div><b>'+x.f+'</b></div>').join(''):'<div class="muted">Henüz tamamlanan yolculuk yok.</div>'}
-function goTo(v){
-  if(!['home','history','profile'].includes(v)) v='home';
-  ['home','history','profile'].forEach(x=>$(x).style.display=(x===v?'block':'none'));
-  ['nHome','nHistory','nProfile'].forEach(x=>$(x).classList.remove('on'));
-  const btn=$('n'+v.charAt(0).toUpperCase()+v.slice(1));
-  if(btn)btn.classList.add('on');
-  if(v==='history')renderHistory();
-  if(v==='profile')refresh();
-  if(v==='home')setTimeout(()=>map.invalidateSize(),100);
-}
-document.addEventListener('DOMContentLoaded',()=>{
-  const bind=(id,view)=>{
-    const el=$(id); if(!el)return;
-    el.addEventListener('click',()=>goTo(view));
-  };
-  bind('nHome','home');
-  bind('nHistory','history');
-  bind('nProfile','profile');
-  const avatar=$('topAvatar');
-  if(avatar) avatar.addEventListener('click',()=>goTo('profile'));
-});
-function err(m){$('err').textContent=m;$('err').style.display='block'}
-function clearErr(){$('err').style.display='none'}
-async function register(){clearErr();let n=$('an').value.trim(),e=$('ae').value.trim(),p=$('ap').value;if(!n||!e||!p)return err('Ad, e-posta ve şifreyi doldur.');if(p.length<8)return err('Şifre en az 8 karakter olmalı.');try{await account.create(Appwrite.ID.unique(),e,p,n);await account.createEmailPasswordSession(e,p);user=await account.get();await ensureProfileRow('');$('ap').value='';await refresh();alert('Hesap oluşturuldu ve giriş yapıldı.')}catch(x){err(x.message||'Kayıt başarısız.')}}
-async function login(){clearErr();let e=$('ae').value.trim(),p=$('ap').value;if(!e||!p)return err('E-posta ve şifreyi gir.');try{await account.createEmailPasswordSession(e,p);user=await account.get();$('ap').value='';await refresh();alert('Giriş başarılı.')}catch(x){err(x.message||'Giriş yapılamadı.')}}
-async function logout(){try{await account.deleteSession({sessionId:'current'})}catch(x){}user=null;await refresh();alert('Çıkış yapıldı.')}
-async function loadProfileRow(){
-  if(!user||!tablesDB)return null;
-  try{
-    return await tablesDB.getRow({databaseId:DB_ID,tableId:PROFILE_TABLE_ID,rowId:user.$id});
-  }catch(x){
-    return null;
-  }
-}
-async function ensureProfileRow(phone=''){
-  if(!user||!tablesDB)return null;
-  try{
-    return await tablesDB.getRow({databaseId:DB_ID,tableId:PROFILE_TABLE_ID,rowId:user.$id});
-  }catch(x){
-    return await tablesDB.createRow({
-      databaseId:DB_ID,
-      tableId:PROFILE_TABLE_ID,
-      rowId:user.$id,
-      data:{userId:user.$id,phone:phone||''},
-      permissions:[
-        Appwrite.Permission.read(Appwrite.Role.user(user.$id)),
-        Appwrite.Permission.update(Appwrite.Role.user(user.$id)),
-        Appwrite.Permission.delete(Appwrite.Role.user(user.$id))
-      ]
-    });
-  }
-}
-async function refresh(){
-  if(user){
-    $('loggedOut').style.display='none';
-    $('loggedIn').style.display='block';
-
-    const local=JSON.parse(localStorage.getItem('bmProfile_'+user.$id)||'{}');
-    const displayName=local.name||user.name||'Birmotor kullanıcısı';
-    const displayPhone=local.phone||'';
-
-    $('pn').textContent=displayName;
-    $('pe').textContent=user.email||'';
-    $('name').value=displayName;
-    $('phone').value=displayPhone;
-    $('pa').textContent=displayName[0]||'Ş';
-    $('topAvatar').textContent=displayName[0]||'Ş';
-
-    try{
-      const row=await loadProfileRow();
-      if(row && row.phone!=null && !displayPhone){
-        $('phone').value=row.phone||'';
-      }
-    }catch(e){}
-  }else{
-    $('loggedOut').style.display='block';
-    $('loggedIn').style.display='none';
-    $('topAvatar').textContent='Ş';
-  }
-}
-async function saveProfile(){
-  clearErr();
-  const btn=$('saveProfileBtn');
-  const status=$('saveStatus');
-  const n=$('name').value.trim()||'Birmotor kullanıcısı';
-  const p=$('phone').value.trim();
-
-  if(!user){err('Önce giriş yapmalısın.');return;}
-
-  if(btn){btn.disabled=true;btn.textContent='Kaydediliyor...';}
-  if(status)status.textContent='Profil kaydediliyor…';
-
-  // Önce telefona kaydet: Appwrite çalışmasa bile profil kaybolmaz.
-  localStorage.setItem('bmProfile_'+user.$id,JSON.stringify({
-    name:n,phone:p,savedAt:new Date().toISOString()
-  }));
-
-  // Appwrite varsa ayrıca senkronize etmeyi dene.
-  let cloudSaved=false;
-  try{
-    if(tablesDB){
-      let row=null;
-      try{
-        row=await tablesDB.getRow({
-          databaseId:DB_ID,tableId:PROFILE_TABLE_ID,rowId:user.$id
-        });
-      }catch(e){}
-
-      const permissions=[
-        Appwrite.Permission.read(Appwrite.Role.user(user.$id)),
-        Appwrite.Permission.update(Appwrite.Role.user(user.$id)),
-        Appwrite.Permission.delete(Appwrite.Role.user(user.$id))
-      ];
-      const data={userId:user.$id,phone:p};
-
-      if(row){
-        await tablesDB.updateRow({
-          databaseId:DB_ID,tableId:PROFILE_TABLE_ID,rowId:user.$id,data,permissions
-        });
-      }else{
-        await tablesDB.createRow({
-          databaseId:DB_ID,tableId:PROFILE_TABLE_ID,rowId:user.$id,data,permissions
-        });
-      }
-      cloudSaved=true;
-    }
-  }catch(e){
-    console.warn('Appwrite profil senkronizasyonu başarısız:',e);
-  }
-
-  try{
-    user=await account.updateName(n);
-  }catch(e){
-    // Appwrite isim güncellemesi başarısız olsa bile yerel kayıt korunur.
-    console.warn('Hesap adı güncellenemedi:',e);
-  }
-
-  // Ekranı beklemeden güncelle; ardından Appwrite durumunu yenile.
-  $('pn').textContent=n;
-  $('name').value=n;
-  $('phone').value=p;
-  $('pa').textContent=n[0]||'Ş';
-  $('topAvatar').textContent=n[0]||'Ş';
-  await refresh();
-  if(status)status.textContent=cloudSaved
-    ? '✓ Profil kaydedildi ve Appwrite ile eşitlendi.'
-    : '✓ Profil telefona kaydedildi.';
-
-  if(btn){btn.disabled=false;btn.textContent='Profili Kaydet';}
-}
-
-// Profil kaydetme butonu
-window.addEventListener('DOMContentLoaded',()=>{
-  const b=$('saveProfileBtn');
-  if(b){
-    b.addEventListener('click',saveProfile);
-  }
-});
-
-async function init(){try{user=await account.get()}catch(x){user=null}await refresh();renderHistory()}init();
-</script></body></html>
+</script>
+</body></html>
