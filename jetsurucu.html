@@ -1,0 +1,69 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jet Sürücü</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101116;color:white;font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif}
+main{max-width:480px;margin:auto;padding:22px}
+header{padding:18px 0 28px}
+.logo{font-size:32px;font-weight:900;color:#3984ff}
+.logo span{color:white}
+.tag{color:#bbb;margin-top:8px}
+.card{background:#1d1f27;border:1px solid #343642;border-radius:22px;padding:22px;margin-bottom:20px}
+h2{font-size:23px;margin:0 0 14px}
+p{color:#c4c5cc;line-height:1.5}
+button{width:100%;padding:17px;border:0;border-radius:13px;font-size:17px;font-weight:700;cursor:pointer}
+.online{background:#3984ff;color:white}
+.offline{background:#444653;color:white}
+.status{margin:14px 0;color:#bbb}
+.item{border:1px solid #41434f;border-radius:14px;padding:16px;margin-top:12px}
+.small{font-size:13px;color:#aaa}
+</style>
+</head>
+<body>
+<main>
+<header>
+<div class="logo">JET<span>SÜRÜCÜ</span></div>
+<div class="tag">Yola çık, kazanmaya başla! 🏍️</div>
+</header>
+
+<section class="card">
+<h2>Sürücü durumu</h2>
+<p>Yolculuk isteği alabilmek için çevrimiçi ol.</p>
+<button id="onlineBtn" class="offline">Çevrimdışı</button>
+<div id="status" class="status">Şu anda yolculuk almıyorsun.</div>
+</section>
+
+<section class="card">
+<h2>Yolculuk istekleri</h2>
+<p>Yeni yolculuk talepleri burada görüntülenecek.</p>
+<div class="item">
+<strong>Henüz yolculuk yok</strong>
+<p class="small">İsteklerin burada görünmesi için sunucu bağlantısı kurulacak.</p>
+</div>
+</section>
+
+<section class="card">
+<h2>Sürücü güvenliği</h2>
+<p>Yola çıkmadan önce ehliyetini, gerekli belgelerini ve güvenlik ekipmanlarını kontrol et.</p>
+</section>
+<p class="small">Jet Sürücü · JetMotor</p>
+</main>
+
+<script>
+let online=false;
+const btn=document.getElementById('onlineBtn');
+const status=document.getElementById('status');
+btn.addEventListener('click',()=>{
+online=!online;
+btn.textContent=online?'Çevrimiçi':'Çevrimdışı';
+btn.className=online?'online':'offline';
+status.textContent=online?'Çevrimiçi görünüyorsun. Sunucu bağlantısı henüz kurulmadı.':'Şu anda yolculuk almıyorsun.';
+});
+</script>
+</body>
+</html>
